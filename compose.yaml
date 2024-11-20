@@ -8,12 +8,41 @@ services:
         - action: sync
           path: ./frontend/src
           target: /frontend/src
+          
   backend:
-    build: ./backend
+    build:
+      context: backend
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
+    env_file: ./.env
+    environment:
+      - APP_VERSION=1.1.1
+    secrets:
+      - mysql_root_password
     develop:
       watch:
         - action: sync
           path: ./backend
           target: /backend
+
+  mysql:
+    image: mysql:latest
+    restart: always
+    secrets:
+      - mysql_root_password
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql_root_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/db/migrations:/docker-entrypoint-initdb.d 
+    ports:
+      - 3306:3306
+   
+secrets:
+  mysql_root_password:
+    file: ./backend/secrets/mysql_root_password.txt
+
+volumes:
+  mysql-data:
