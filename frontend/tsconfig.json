@@ -1,15 +1,30 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "jsx": "react-jsx",
-    "target": "ESNext",
-    "types": ["vite/client"],
-    "isolatedModules": true,
-    "allowImportingTsExtensions": true,
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "strict": true
-  }
+    "target": "esnext", // Target the latest ECMAScript version
+    "useDefineForClassFields": true, // Use the new class fields semantics in ESNext
+    "lib": ["dom", "dom.iterable", "esnext"], // Include dom and ESNext libraries
+    "allowJs": true, // Allow JavaScript files
+    "jsx": "react-jsx", // Use the new JSX transform (React 17+)
+    "module": "esnext", // Use ESNext module system (Vite relies on this)
+    "moduleResolution": "node", // Resolve modules like Node.js
+    "esModuleInterop": true, // Ensure compatibility with non-ES modules
+    "skipLibCheck": true, // Skip type checking of declaration files (for performance)
+    "strict": true, // Enable strict type checking options
+    "forceConsistentCasingInFileNames": true, // Ensure consistent file naming (case-sensitive)
+    "resolveJsonModule": true, // Allow importing JSON files
+    "noEmit": true, // Don't output any files (Vite handles this)
+    "isolatedModules": true, // Ensure each file is treated as a separate module
+    "baseUrl": ".", // Base URL for resolving non-relative modules
+    "paths": {
+      // Path mappings, if needed
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*" // Include all files inside the `src` folder
+  ],
+  "exclude": [
+    "node_modules", // Exclude `node_modules` folder
+    "dist" // Exclude `dist` folder (if present)
+  ]
 }

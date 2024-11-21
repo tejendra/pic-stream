@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
-import { albumApi } from './services/album.ts';
+import { albumApi } from './services/album';
 
 export const store = configureStore({
   reducer: {

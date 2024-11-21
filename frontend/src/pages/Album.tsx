@@ -12,15 +12,16 @@ import { useParams } from 'react-router-dom';
 import {
   useGetAlbumByNameQuery,
   useCreateAlbumMediaMutation,
-} from '../services/album.ts';
+} from '../services/album';
 import { Download } from '@mui/icons-material';
+import { ChangeEvent } from 'react';
 
-function Album(props) {
+function Album() {
   let { name } = useParams();
   const { data, error, isLoading } = useGetAlbumByNameQuery(name);
   const [createAlbumMedia, result] = useCreateAlbumMediaMutation();
 
-  const handleUpload = (e) => {
+  const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     console.log('Uploading');
     createAlbumMedia({ name, files: e.target.files })
       .then(() => console.log('Upload done'))
@@ -70,7 +71,7 @@ function Album(props) {
         <Button onClick={() => handleDownload()}>Download All</Button>
       </Stack>
       <Stack direction="row" gap={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-        {data.media.map((media) => {
+        {data.media.map((media: { thumbnailUrl: string; filename: string }) => {
           return (
             <Card
               sx={{ maxWidth: 250 }}

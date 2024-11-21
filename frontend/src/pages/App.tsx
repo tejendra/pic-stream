@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 function App() {
   const [name, setName] = useState('');
   let navigate = useNavigate();
-  const joinAlbum = (albumName) => {
+  const joinAlbum = (albumName: string) => {
     console.log('Opening ', albumName);
     navigate(`/albums/${albumName}`);
   };
 
-  const createAlbum = (albumName) => {
+  const createAlbum = (albumName: string) => {
     console.log('Creating ', albumName);
     navigate(`/albums/${albumName}`);
   };

@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
-import App from './pages/App.tsx';
-import Album from './pages/Album.tsx';
+import App from './pages/App';
+import Album from './pages/Album';
 
 const router = createBrowserRouter([
   {
