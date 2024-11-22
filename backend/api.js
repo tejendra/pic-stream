@@ -1,12 +1,12 @@
-var express = require('express');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors');
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import logger from 'morgan';
+import cors from 'cors';
 
-var indexRouter = require('./routes/index');
-var albumsRouter = require('./routes/albums');
+import indexRouter from './routes/index.js';
+import albumsRouter from './routes/albums.js';
 
-var app = express();
+let app = express();
 
 app.use(cors());
 app.use(logger('dev'));
@@ -27,4 +27,4 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
 });
 
-module.exports = app;
+export default app;

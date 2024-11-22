@@ -1,67 +1,99 @@
-var express = require('express');
-const formidable = require('formidable');
-var router = express.Router();
-const fileparser = require('../fileparser');
+import express from 'express';
+import fs from 'node:fs';
+import { IncomingForm, errors as formidableErrors } from 'formidable';
+import {
+  GetObjectCommand,
+  ListObjectsCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-router.get('/bad', function (req, res, next) {
-  res.status(500).send('Internal Server Error');
-});
+import s3Client from '../aws/s3.js';
 
+let router = express.Router();
+
+/**
+ * Add photos and videos to given album
+ */
 router.post('/:name', async function (req, res, next) {
-  const form = formidable({});
+  const form = new IncomingForm({
+    maxFileSize: 100 * 1024 * 1024, //100 MBs converted to bytes,
+    allowEmptyFiles: false,
+    filter: function ({ name, originalFilename, mimetype }) {
+      // keep only images
+      const valid = mimetype?.includes('image') || mimetype?.includes('video');
+      if (!valid)
+        form.emit(
+          'error',
+          new formidableErrors.default('Invalid file', 0, 400),
+        );
+      return valid;
+    },
+  });
 
   form.parse(req, (err, fields, files) => {
     if (err) {
-      next(err);
-      return;
+      return res.status(500).json({ error: err });
     }
-    res.json({ fields, files });
+
+    const uploadedFiles = files.files;
+    uploadedFiles.forEach((file) => {
+      saveToS3(req.params.name, file);
+    });
+
+    return res.status(200).json({ files: uploadedFiles });
   });
-  // try {
-  //   console.log(req.body);
-  //   const data = await fileparser(req);
-  //   res.status(200).json({
-  //     message: "Success",
-  //     data
-  //   });
-  // } catch (error) {
-  //   res.status(400).json({
-  //     message: "An error occurred.",
-  //     error
-  //   });
-  // }
 });
 
-router.get('/:name', function (req, res, next) {
+async function saveToS3(albumName, file) {
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+      Key: `${albumName}/${file.originalFilename}`,
+      Body: fs.createReadStream(file.filepath),
+    }),
+  );
+}
+
+async function listObjectsInBucket(albumName) {
+  const response = await s3Client.send(
+    new ListObjectsCommand({
+      Bucket: process.env.AWS_BUCKET,
+      Prefix: albumName,
+    }),
+  );
+
+  if (response.Contents.length === 0) {
+    return [];
+  }
+
+  const signedUrls = await Promise.all(
+    response.Contents.map(async (object) => {
+      const params = {
+        Bucket: process.env.AWS_BUCKET,
+        Key: object.Key,
+      };
+
+      const url = await getSignedUrl(s3Client, new GetObjectCommand(params), {
+        expiresIn: 3600,
+      });
+
+      console.log(`Pre-signed URL for ${object.Key}: ${url}`);
+
+      return { key: object.Key, signedUrl: url };
+    }),
+  );
+
+  return signedUrls;
+}
+
+router.get('/:name', async function (req, res, next) {
+  const response = await listObjectsInBucket(req.params.name);
+
   res.json({
-    title: `Hello, ${req.params.name}`,
-    media: [
-      {
-        filename: 'grapes.jpg',
-        thumbnailUrl: 'https://via.placeholder.com/250',
-        downloadUrl: 'https://via.placeholder.com/500',
-        contentType: 'image/jpeg',
-      },
-      {
-        filename: 'apple.jpg',
-        thumbnailUrl: 'https://via.placeholder.com/250',
-        downloadUrl: 'https://via.placeholder.com/500',
-        contentType: 'image/jpeg',
-      },
-      {
-        filename: 'orange.jpg',
-        thumbnailUrl: 'https://via.placeholder.com/250',
-        downloadUrl: 'https://via.placeholder.com/500',
-        contentType: 'image/jpeg',
-      },
-      {
-        filename: 'strawberry.jpg',
-        thumbnailUrl: 'https://via.placeholder.com/250',
-        downloadUrl: 'https://via.placeholder.com/500',
-        contentType: 'image/jpeg',
-      },
-    ],
+    albumName: req.params.name,
+    media: response,
   });
 });
 
-module.exports = router;
+export default router;

@@ -8,7 +8,7 @@ services:
         - action: sync
           path: ./frontend/src
           target: /frontend/src
-          
+
   backend:
     build:
       context: backend
@@ -20,6 +20,8 @@ services:
       - APP_VERSION=1.1.1
     secrets:
       - mysql_root_password
+      - aws_access_key
+      - aws_secret_access_key
     develop:
       watch:
         - action: sync
@@ -36,13 +38,17 @@ services:
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql_root_password
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./backend/db/migrations:/docker-entrypoint-initdb.d 
+      - ./backend/db/migrations:/docker-entrypoint-initdb.d
     ports:
       - 3306:3306
-   
+
 secrets:
   mysql_root_password:
     file: ./backend/secrets/mysql_root_password.txt
+  aws_access_key:
+    file: ./backend/secrets/aws_access_key.txt
+  aws_secret_access_key:
+    file: ./backend/secrets/aws_secret_access_key.txt
 
 volumes:
   mysql-data:

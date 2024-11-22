@@ -9,20 +9,17 @@ export const albumApi = createApi({
     getAlbumByName: builder.query({
       query: (name) => `/albums/${name}`,
     }),
-    createAlbumMedia: builder.mutation({
+    uploadToAlbum: builder.mutation({
       query: (data) => {
         let bodyFormData = new FormData();
 
         for (const file of data.files) {
-          bodyFormData.append('file', file);
+          bodyFormData.append('files', file);
         }
 
         return {
           url: `/albums/${data.name}`,
           method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data;',
-          },
           body: bodyFormData,
         };
       },
@@ -32,4 +29,4 @@ export const albumApi = createApi({
 
 // Export hooks for usage in functional components, which are
 // auto-generated based on the defined endpoints
-export const { useGetAlbumByNameQuery, useCreateAlbumMediaMutation } = albumApi;
+export const { useGetAlbumByNameQuery, useUploadToAlbumMutation } = albumApi;

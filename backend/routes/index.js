@@ -1,6 +1,6 @@
-var express = require('express');
-var fs = require('node:fs');
-const { mysqlConnection } = require('../db/mysql');
+import express from 'express';
+import fs from 'node:fs';
+import { mysqlConnection } from '../db/mysql.js';
 
 var router = express.Router();
 
@@ -70,4 +70,4 @@ router.post('/volumes', function (req, res, next) {
   // }
 });
 
-module.exports = router;
+export default router;

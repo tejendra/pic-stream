@@ -11,7 +11,7 @@ import {
 import { useParams } from 'react-router-dom';
 import {
   useGetAlbumByNameQuery,
-  useCreateAlbumMediaMutation,
+  useUploadToAlbumMutation,
 } from '../services/album';
 import { Download } from '@mui/icons-material';
 import { ChangeEvent } from 'react';
@@ -19,7 +19,7 @@ import { ChangeEvent } from 'react';
 function Album() {
   let { name } = useParams();
   const { data, error, isLoading } = useGetAlbumByNameQuery(name);
-  const [createAlbumMedia, result] = useCreateAlbumMediaMutation();
+  const [createAlbumMedia, result] = useUploadToAlbumMutation();
 
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     console.log('Uploading');
@@ -52,7 +52,7 @@ function Album() {
   return (
     <Container maxWidth="md">
       <Typography variant="h1" sx={{ mb: 3 }}>
-        {data?.title}
+        {data?.albumName}
       </Typography>
       <Stack gap={2} flexDirection="row" sx={{ mb: 3 }}>
         <Button component="label" role={undefined}>
@@ -71,18 +71,15 @@ function Album() {
         <Button onClick={() => handleDownload()}>Download All</Button>
       </Stack>
       <Stack direction="row" gap={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
-        {data.media.map((media: { thumbnailUrl: string; filename: string }) => {
+        {data.media.map((media: { signedUrl: string; key: string }) => {
           return (
-            <Card
-              sx={{ maxWidth: 250 }}
-              key={media.thumbnailUrl + media.filename}
-            >
+            <Card sx={{ maxWidth: 250 }} key={media.key}>
               <CardMedia
                 height="250"
                 width="250"
                 component="img"
-                image={media.thumbnailUrl}
-                alt={media.filename}
+                image={media.signedUrl}
+                alt={media.key}
               />
               <CardActions>
                 <IconButton aria-label="add to favorites">
