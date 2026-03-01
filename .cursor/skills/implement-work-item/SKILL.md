@@ -26,10 +26,13 @@ Work items are defined in `plan/work-items.md` (Features → User Stories with D
 
 1. **Gather requirements** — Read the work item (from `plan/work-items.md` or user reference). Understand scope and acceptance criteria, then ask clarifying questions if needed.
 2. **Design solution** — Consider all three perspectives (Frontend / Backend / Security).
-3. **Write implementation plan** — Document your approach in `plan/implementation/{feature-and-story-id}.md` (e.g. `1.1-init-repo.md`, `2.1-firestore-collections.md`). Use a different path only if the user specifies one.
-4. **Create new branch** - Pull the latest changes in the `main` branch then create a new feature branch before making any code changes
+3. **Create feature branch** — Check out the feature branch **before** doing any further work. Pull latest from `main`, then create and switch to `feat/<story-id>`. Do not write the implementation plan or edit code until on the feature branch.
+4. **Write implementation plan** — Document your approach in `plan/implementation/{feature-and-story-id}.md` (e.g. `1.1-init-repo.md`, `2.1-firestore-collections.md`). Use a different path only if the user specifies one.
 5. **Implement** — Implement the solution and allow the user to review and accept changes.
 6. **Verify** — Run relevant tests and confirm acceptance criteria are met before considering the item done.
+7. **Mark as complete** — Update the work item in `plan/work-items.md` and mark it as complete.
+    - Add `[DONE]` in front of the work item title
+    - Check off the checkboxes for completed acceptance criteria
 
 ### Implementation plan structure
 
@@ -54,6 +57,8 @@ git config user.email "agent@cursor.ai"
 Run this once per repo (or before the first commit) when implementing work items. Use `git config` without `--global` so it applies only to this repository.
 
 ### How to create feature branch
+
+Create and checkout the feature branch **before** writing the implementation plan or making any code changes:
 
 ```bash
 git checkout main
