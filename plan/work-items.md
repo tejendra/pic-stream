@@ -123,15 +123,15 @@ End-to-end flow for creating an album and opening an album with the 5-word seed;
 - [x] Selection uses `crypto.randomBytes`
 - [x] The function is only invoked in the POST `/api/albums` handler
 
-#### 3.2 Implement album creation API
+#### 3.2 Implement album creation API [DONE]
 
 **Description**: Implement POST `/api/albums` with body `{ name, deleteOn, createdBy }`. Generate seed via `generateSeed()`, compute `bcrypt.hash(seed, 10)`, create Firestore album doc with id, name, seedHash, deleteOn, createdAt, createdBy. Return 201 with `{ albumId, seed, token }` where token is a JWT (payload: albumId, exp 24h from now, creator: true). Never log the seed.
 
 **Acceptance Criteria**:
 
-- [ ] POST returns 201 and the three fields (albumId, seed, token)
-- [ ] Album doc has seedHash, not plain seed
-- [ ] Seed does not appear in any log
+- [x] POST returns 201 and the three fields (albumId, seed, token)
+- [x] Album doc has seedHash, not plain seed
+- [x] Seed does not appear in any log
 
 #### 3.3 Implement open album API
 
