@@ -40,15 +40,21 @@ Scaffolding, tooling, and shared configuration so frontend and backend can run a
 - [x] JSON request bodies are parsed
 - [x] The directories `index.ts`, `routes/`, `services/`, `middleware/`, `lib/`, `config.ts` exist under `backend/src/`
 
-#### 1.4 Configure Firebase
+#### 1.4 Configure Firebase [DONE]
 
 **Description**: Create a Firebase project and enable Firestore and Storage. In the backend, use Firebase Admin SDK with default credentials (Cloud Run) or `GOOGLE_APPLICATION_CREDENTIALS` for local dev. Do not add Firebase SDK to the frontend; frontend uses a single env var `VITE_API_URL` for the API base URL.
 
 **Acceptance Criteria**:
 
-- [ ] Backend can read/write Firestore and generate signed Storage URLs
-- [ ] Frontend has no Firebase SDK and only uses `VITE_API_URL`
-- [ ] No runtime errors from missing Firebase config in backend
+- [x] Backend can read/write Firestore and generate signed Storage URLs
+- [x] Frontend has no Firebase SDK and only uses `VITE_API_URL`
+- [x] No runtime errors from missing Firebase config in backend
+- [x] Firebase Hosting configured for SPA (`firebase.json`: `frontend/dist`, SPA rewrite)
+- [x] Firestore and Storage rules in repo; deployable via `firebase deploy`
+- [x] Backend deployable to Cloud Run (Dockerfile, build via Cloud Build, docs)
+- [x] Backend config defaults to project from `.firebaserc` when env vars unset
+- [x] Deploy order documented: deploy backend → set `VITE_API_URL` to Cloud Run URL → build frontend → deploy hosting
+- [x] Docs: how Firebase is used ([docs/firebase.md](../docs/firebase.md)), how to configure and deploy Cloud Run ([docs/cloud-run.md](../docs/cloud-run.md))
 
 #### 1.5 Define environment variables
 
