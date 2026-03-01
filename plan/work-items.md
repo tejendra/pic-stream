@@ -73,17 +73,17 @@ Firestore schema, Storage path conventions, and shared types so both frontend an
 
 ### User Stories
 
-#### 2.1 Define Firestore collections and indexes
+#### 2.1 Define Firestore collections and indexes [DONE]
 
 **Description**: Define Firestore collection `albums` (fields: id, name, seedHash, deleteOn, createdAt, createdBy). Define subcollection `albums/{albumId}/media` (fields: id, storagePath, previewPath, thumbnailPath, displayName, uploaderName, size, mimeType, duplicateKey, createdAt). Create composite index: albums by deleteOn ascending. Create composite index: media by albumId + createdAt ascending.
 
 **Acceptance Criteria**:
 
-- [ ] Collection `albums` exists with exactly those fields
-- [ ] Subcollection `albums/{albumId}/media` exists with exactly those fields
-- [ ] Composite index on albums by deleteOn is created and deployed
-- [ ] Composite index on media by albumId + createdAt is created and deployed
-- [ ] Queries by deleteOn and by albumId+createdAt run without error
+- [x] Collection `albums` exists with exactly those fields
+- [x] Subcollection `albums/{albumId}/media` exists with exactly those fields
+- [x] Composite index on albums by deleteOn is created and deployed (Firestore built-in single-field index)
+- [x] Composite index on media by albumId + createdAt is created and deployed
+- [x] Queries by deleteOn and by albumId+createdAt run without error
 
 #### 2.2 Document Storage path layout and path helper
 
