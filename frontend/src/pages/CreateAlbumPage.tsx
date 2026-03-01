@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { createAlbum } from '../api/client'
+import { addToRecentAlbums } from '../lib/recentAlbums'
 import type { CreateAlbumResponse } from 'shared'
 
 const DEFAULT_DELETE_ON = (() => {
@@ -31,6 +32,7 @@ export default function CreateAlbumPage() {
       setResult(data)
       const key = `album_${data.albumId}`
       localStorage.setItem(key, JSON.stringify({ token: data.token, albumId: data.albumId }))
+      addToRecentAlbums(data.albumId, name)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Create album failed')
     }
