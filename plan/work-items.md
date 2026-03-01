@@ -10,24 +10,24 @@ Scaffolding, tooling, and shared configuration so frontend and backend can run a
 
 ### User Stories
 
-#### 1.1 Initialize repo
+#### [DONE] 1.1 Initialize repo
 
 **Description**: Initialize a single repo with top-level directories `frontend/` and `backend/`. Add root `package.json` with npm workspaces: `["frontend", "backend"]`.
 
 **Acceptance Criteria**:
 
-- [ ] Repo root contains exactly `frontend/` and `backend/` directories
-- [ ] Root `package.json` exists with `"workspaces": ["frontend", "backend"]`
+- [x] Repo root contains exactly `frontend/` and `backend/` directories
+- [x] Root `package.json` exists with `"workspaces": ["frontend", "backend"]`
 
-#### 1.2 Scaffold frontend
+#### 1.2 Scaffold frontend [DONE]
 
 **Description**: Scaffold frontend with Vite, React, and TypeScript. Install React Router. In `vite.config.ts` set proxy: `/api` → `http://localhost:3001`. Add minimal `App` and a single route `/` that renders a placeholder.
 
 **Acceptance Criteria**:
 
-- [ ] Running `npm run dev` from `frontend/` starts the dev server
-- [ ] Requests from the browser to `/api/*` are proxied to `http://localhost:3001`
-- [ ] Visiting `/` renders without error
+- [x] Running `npm run dev` from `frontend/` starts the dev server
+- [x] Requests from the browser to `/api/*` are proxied to `http://localhost:3001`
+- [x] Visiting `/` renders without error
 
 #### 1.3 Scaffold backend
 
@@ -584,7 +584,7 @@ Deploy frontend to Firebase Hosting and backend to Cloud Run; wire cron.
 
 #### 13.3 Configure Cloud Scheduler
 
-**Description**: Create Cloud Scheduler job: HTTP POST to `https://<cloud-run-url>/api/cron/delete-expired`, header `Authorization: Bearer <CRON_SECRET>` (store secret in Secret Manager or env). Schedule: 0 2 * * * (daily 02:00 UTC). README documents manual test: curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<url>/api/cron/delete-expired.
+**Description**: Create Cloud Scheduler job: HTTP POST to `https://<cloud-run-url>/api/cron/delete-expired`, header `Authorization: Bearer <CRON_SECRET>` (store secret in Secret Manager or env). Schedule: 0 2 ** * (daily 02:00 UTC). README documents manual test: curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<url>/api/cron/delete-expired.
 
 **Acceptance Criteria**:
 
