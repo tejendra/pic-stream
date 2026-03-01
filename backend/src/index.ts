@@ -2,6 +2,7 @@ import express from 'express'
 import { config, isFirebaseConfigured } from './config.js'
 import { readDoc, writeDoc } from './lib/firestore.js'
 import { getSignedDownloadUrl } from './lib/storage.js'
+import albumsRouter from './routes/albums.js'
 import type { Album, Media } from 'shared'
 
 const app = express()
@@ -16,6 +17,8 @@ app.use((_req, res, next) => {
 })
 
 app.options('*', (_req, res) => res.sendStatus(204))
+
+app.use('/api/albums', albumsRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
