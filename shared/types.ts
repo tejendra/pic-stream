@@ -49,6 +49,12 @@ export interface OpenAlbumResponse {
   token: string
 }
 
+/** Value stored in localStorage under key `album_${albumId}`. When reading, fields may be missing. */
+export interface StoredAlbumToken {
+  token?: string
+  albumId?: string
+}
+
 /** GET /api/albums/:id */
 export interface GetAlbumResponse {
   id: string

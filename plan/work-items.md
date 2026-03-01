@@ -181,15 +181,15 @@ User can open an existing album by entering the seed or by choosing a recent alb
 - [x] Success stores token and redirects to album page
 - [x] Invalid seed shows "Invalid seed"
 
-#### 4.2 Recent albums list (frontend)
+#### 4.2 Recent albums list (frontend) [DONE]
 
 **Description**: Frontend: Store recent albums in localStorage under key `recentAlbums` as JSON array of `{ albumId, name }`. On landing page load, read `recentAlbums` and display a list. On item click: read token from `album_${albumId}`; if missing or JWT exp in the past, show "Re-enter seed" and link to open flow; else navigate to `/album/${albumId}`.
 
 **Acceptance Criteria**:
 
-- [ ] Recent albums appear on landing
-- [ ] Click with valid token navigates to album page
-- [ ] Expired or missing token shows re-enter seed
+- [x] Recent albums appear on landing
+- [x] Click with valid token navigates to album page
+- [x] Expired or missing token shows re-enter seed
 
 ---
 
@@ -199,14 +199,14 @@ Creator can view album details, change delete date, and delete the entire album.
 
 ### User Stories
 
-#### 5.1 Get album details API
+#### 5.1 Get album details API [DONE]
 
-**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
+**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ id, name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
 
 **Acceptance Criteria**:
 
-- [ ] Authenticated request with matching albumId returns 200 and the four fields
-- [ ] Mismatch returns 403
+- [x] Authenticated request with matching albumId returns 200 and the four fields
+- [x] Mismatch returns 403
 
 #### 5.2 Update album API
 

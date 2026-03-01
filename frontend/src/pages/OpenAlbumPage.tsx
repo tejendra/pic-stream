@@ -8,7 +8,8 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { BIP39_WORDS } from '../lib/bip39-words'
-import { openAlbum } from '../api/client'
+import { addToRecentAlbums } from '../lib/recentAlbums'
+import { getAlbum, openAlbum } from '../api/client'
 
 const WORD_COUNT = 5
 const BIP39_OPTIONS = [...BIP39_WORDS]
@@ -45,6 +46,8 @@ export default function OpenAlbumPage() {
       const { token, albumId } = await openAlbum(seed)
       const key = `album_${albumId}`
       localStorage.setItem(key, JSON.stringify({ token, albumId }))
+      const album = await getAlbum(albumId, token)
+      addToRecentAlbums(albumId, album.name)
       navigate(`/album/${albumId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid seed')
