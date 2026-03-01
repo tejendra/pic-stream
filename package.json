@@ -1,0 +1,5 @@
+{
+  "name": "pic-stream",
+  "private": true,
+  "workspaces": ["frontend", "backend"]
+}
