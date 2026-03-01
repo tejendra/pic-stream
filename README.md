@@ -29,12 +29,14 @@ Just got back from an amazing vacation with hundreds of stunning photos? Don't l
 
 ## Environment variables
 
-Backend reads config from `backend/.env`. Copy `backend/.env-local-example` to `backend/.env` and set values. Do not commit `.env`.
+Backend reads config from `backend/.env`. For the full list with placeholders, see **`backend/.env.example`**. For local dev you can copy `backend/.env-local-example` to `backend/.env` (add any vars from `.env.example` as needed). Do not commit `.env`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3001` | Port the backend server listens on. |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed origin for CORS (frontend dev server URL). |
+| `JWT_SECRET` | — | Secret for signing album tokens (min 32 chars). Required for auth. |
+| `CRON_SECRET` | — | Secret for securing `/api/cron/delete-expired` (Authorization: Bearer). |
 | `GOOGLE_CLOUD_PROJECT` | `pic-stream-34ace` | Firebase / Google Cloud project ID. Override for another project. |
 | `FIREBASE_STORAGE_BUCKET` | `pic-stream-34ace.appspot.com` | Firebase Storage bucket. Override for another project. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | — | Path to service account JSON (local dev). Omit on Cloud Run. |
