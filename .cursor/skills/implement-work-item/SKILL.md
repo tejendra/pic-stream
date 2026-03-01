@@ -70,9 +70,12 @@ Example: `feat/1.1-init-repo` or `feat/2.1-firestore-collections`.
 
 ### How to commit code
 
+Start with the work item number followed by the work item title. Example: "4.1 Open album flow with seed autocomplete", "5.5 Recent albums list and StoredAlbumTokenType"
+
 ```bash
 git add .
-git commit -m "<Work item title>"
+git commit -m "<Work item number> <Work item title>"
+# git commit -m "4.1 Open album flow with seed autocomplete
 ```
 
 ## Principles to follow

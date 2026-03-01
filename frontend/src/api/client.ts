@@ -34,18 +34,44 @@ export async function createAlbum(
   return res.json() as Promise<CreateAlbumResponse>
 }
 
-/** Decode JWT payload without verification (server already validated). Returns albumId for storage/redirect. */
-function decodeAlbumIdFromToken(token: string): string | null {
+/** Decode JWT payload without verification (server already validated). */
+function decodeJwtPayload(token: string): { albumId?: string; exp?: number } | null {
   try {
     const payload = token.split('.')[1]
     if (!payload) return null
-    const decoded = JSON.parse(
+    return JSON.parse(
       atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    ) as { albumId?: string }
-    return typeof decoded.albumId === 'string' ? decoded.albumId : null
+    ) as { albumId?: string; exp?: number }
   } catch {
     return null
   }
+}
+
+function decodeAlbumIdFromToken(token: string): string | null {
+  const decoded = decodeJwtPayload(token)
+  return decoded && typeof decoded.albumId === 'string' ? decoded.albumId : null
+}
+
+/** True if token is missing, invalid, or exp is in the past (with 60s buffer). */
+export function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) return true
+  const payload = decodeJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') return true
+  return payload.exp < Math.floor(Date.now() / 1000) + 60
+}
+
+export async function getAlbum(
+  albumId: string,
+  token: string
+): Promise<GetAlbumResponse> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Failed to load album')
+  }
+  return res.json() as Promise<GetAlbumResponse>
 }
 
 export async function openAlbum(seed: string): Promise<{
