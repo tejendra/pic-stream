@@ -2,9 +2,14 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { config } from '../config.js'
-import { getFirestore, writeDoc } from '../lib/firestore.js'
+import { getFirestore, listAlbums, writeDoc } from '../lib/firestore.js'
 import { generateSeed } from '../lib/seed.js'
-import type { CreateAlbumRequest, CreateAlbumResponse } from 'shared'
+import type {
+  CreateAlbumRequest,
+  CreateAlbumResponse,
+  OpenAlbumRequest,
+  OpenAlbumResponse,
+} from 'shared'
 
 const router = Router()
 
@@ -77,6 +82,62 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     console.error('[POST /api/albums] failed:', err instanceof Error ? err.message : err)
     if (err instanceof Error && err.stack) console.error('[POST /api/albums] stack:', err.stack)
     res.status(500).json({ error: 'Album creation failed' })
+  }
+})
+
+function isValidOpenBody(body: unknown): body is OpenAlbumRequest {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'seed' in body &&
+    typeof (body as OpenAlbumRequest).seed === 'string'
+  )
+}
+
+/**
+ * POST /api/albums/open – open album with seed. Body: { seed }.
+ * Returns 200 { token } (JWT, creator: false) or 401 if seed does not match any album.
+ */
+router.post('/open', async (req: Request, res: Response): Promise<void> => {
+  if (!config.jwtSecret) {
+    res.status(503).json({ error: 'Server not configured (JWT_SECRET)' })
+    return
+  }
+
+  const db = getFirestore()
+  if (!db) {
+    res.status(503).json({ error: 'Database unavailable' })
+    return
+  }
+
+  if (!isValidOpenBody(req.body)) {
+    res.status(400).json({ error: 'Invalid body: need seed (string)' })
+    return
+  }
+
+  const { seed } = req.body
+
+  try {
+    // TODO: does not scale — lists all albums and compares bcrypt in a loop. Consider indexing by
+    // a derived key (e.g. hash of seed or first word + length) or a dedicated lookup table.
+    const albums = await listAlbums()
+    for (const album of albums) {
+      const seedHash = album.seedHash as string | undefined
+      if (typeof seedHash === 'string' && (await bcrypt.compare(seed, seedHash))) {
+        const exp = Math.floor(Date.now() / 1000) + TOKEN_EXPIRY_HOURS * 60 * 60
+        const token = jwt.sign(
+          { albumId: album.id, exp, creator: false },
+          config.jwtSecret
+        )
+        const response: OpenAlbumResponse = { token }
+        res.status(200).json(response)
+        return
+      }
+    }
+    res.status(401).json({ error: 'Invalid seed' })
+  } catch (err) {
+    console.error('[POST /api/albums/open] failed:', err instanceof Error ? err.message : err)
+    res.status(500).json({ error: 'Open album failed' })
   }
 })
 
