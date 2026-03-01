@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { config } from '../config.js'
-import { getFirestore, listAlbums, writeDoc } from '../lib/firestore.js'
+import { requireAlbumToken } from '../middleware/auth.js'
+import { getFirestore, listAlbums, readDoc, writeDoc } from '../lib/firestore.js'
 import { generateSeed } from '../lib/seed.js'
 import type {
   CreateAlbumRequest,
@@ -139,6 +140,32 @@ router.post('/open', async (req: Request, res: Response): Promise<void> => {
     console.error('[POST /api/albums/open] failed:', err instanceof Error ? err.message : err)
     res.status(500).json({ error: 'Open album failed' })
   }
+})
+
+/**
+ * GET /api/albums/:id – album details. Requires Authorization: Bearer <token> and token.albumId === :id.
+ */
+router.get('/:id', requireAlbumToken, async (req: Request, res: Response): Promise<void> => {
+  const db = getFirestore()
+  if (!db) {
+    res.status(503).json({ error: 'Database unavailable' })
+    return
+  }
+  const album = await readDoc<{ name: string; deleteOn: string; createdBy: string }>(
+    'albums',
+    req.params.id
+  )
+  if (!album) {
+    res.status(404).json({ error: 'Album not found' })
+    return
+  }
+  res.status(200).json({
+    id: req.params.id,
+    name: album.name,
+    deleteOn: album.deleteOn,
+    createdBy: album.createdBy,
+    isCreator: req.albumToken?.creator === true,
+  })
 })
 
 export default router

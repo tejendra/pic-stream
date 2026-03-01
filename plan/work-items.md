@@ -143,14 +143,14 @@ End-to-end flow for creating an album and opening an album with the 5-word seed;
 - [x] Wrong seed returns 401
 - [x] Token from open has creator: false
 
-#### 3.4 Implement JWT middleware
+#### 3.4 Implement JWT middleware [DONE]
 
 **Description**: Implement JWT middleware: verify `Authorization: Bearer <token>`, decode with `JWT_SECRET`, ensure `token.albumId` matches route param `:id` or `:albumId`. Attach decoded payload to `req.albumToken`. Reject with 401 if missing, invalid, or mismatch.
 
 **Acceptance Criteria**:
 
-- [ ] Valid token with matching albumId sets `req.albumToken`
-- [ ] Any other case (missing, invalid, mismatch) returns 401
+- [x] Valid token with matching albumId sets `req.albumToken`
+- [x] Any other case (missing, invalid, mismatch) returns 401
 
 #### 3.5 Create album form (frontend)
 
