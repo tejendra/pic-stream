@@ -29,16 +29,16 @@ Scaffolding, tooling, and shared configuration so frontend and backend can run a
 - [x] Requests from the browser to `/api/*` are proxied to `http://localhost:3001`
 - [x] Visiting `/` renders without error
 
-#### 1.3 Scaffold backend
+#### 1.3 Scaffold backend [DONE]
 
 **Description**: Scaffold backend with Node, Express, and TypeScript. Build with `tsc`; run with `node dist/index.js`. Create under `backend/src/`: `index.ts`, `routes/`, `services/`, `middleware/`, `lib/`, `config.ts`. Wire CORS (allow frontend origin) and `express.json()`.
 
 **Acceptance Criteria**:
 
-- [ ] Backend starts on port 3001
-- [ ] CORS allows the frontend origin
-- [ ] JSON request bodies are parsed
-- [ ] The directories `index.ts`, `routes/`, `services/`, `middleware/`, `lib/`, `config.ts` exist under `backend/src/`
+- [x] Backend starts on port 3001
+- [x] CORS allows the frontend origin
+- [x] JSON request bodies are parsed
+- [x] The directories `index.ts`, `routes/`, `services/`, `middleware/`, `lib/`, `config.ts` exist under `backend/src/`
 
 #### 1.4 Configure Firebase
 
