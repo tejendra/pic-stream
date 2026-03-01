@@ -152,16 +152,16 @@ End-to-end flow for creating an album and opening an album with the 5-word seed;
 - [x] Valid token with matching albumId sets `req.albumToken`
 - [x] Any other case (missing, invalid, mismatch) returns 401
 
-#### 3.5 Create album form (frontend)
+#### 3.5 Create album form (frontend) [DONE]
 
 **Description**: Frontend: Create album page with form fields name, delete-on date (date input), creator name. On submit POST `/api/albums`, receive seed and token. Show "Save this seed" with a "Copy" button that copies the seed to clipboard and a "Download" button that downloads a text file containing the seed. Store token and albumId in localStorage under key `album_${albumId}`. Redirect to `/album/${albumId}`.
 
 **Acceptance Criteria**:
 
-- [ ] User can submit the form
-- [ ] Seed is shown once with Copy and Download buttons
-- [ ] Token and albumId are stored in localStorage under `album_${albumId}`
-- [ ] User is redirected to the album page
+- [x] User can submit the form
+- [x] Seed is shown once with Copy and Download buttons
+- [x] Token and albumId are stored in localStorage under `album_${albumId}`
+- [x] User is redirected to the album page
 
 ---
 
