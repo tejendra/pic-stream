@@ -113,15 +113,15 @@ End-to-end flow for creating an album and opening an album with the 5-word seed;
 
 ### User Stories
 
-#### 3.1 Implement seed generation
+#### 3.1 Implement seed generation [DONE]
 
 **Description**: Implement a BIP-39 word list (subset of 2048 words) and secure random selection of 5 words. Expose a function `generateSeed(): string` that returns the space-separated seed. Call it only from the album-creation handler.
 
 **Acceptance Criteria**:
 
-- [ ] Seed is exactly 5 words from the BIP-39 list
-- [ ] Selection uses `crypto.randomBytes`
-- [ ] The function is only invoked in the POST `/api/albums` handler
+- [x] Seed is exactly 5 words from the BIP-39 list
+- [x] Selection uses `crypto.randomBytes`
+- [x] The function is only invoked in the POST `/api/albums` handler
 
 #### 3.2 Implement album creation API
 
