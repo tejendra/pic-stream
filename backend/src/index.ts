@@ -2,7 +2,7 @@ import express from 'express'
 import { config, isFirebaseConfigured } from './config.js'
 import { readDoc, writeDoc } from './lib/firestore.js'
 import { getSignedDownloadUrl } from './lib/storage.js'
-import type { Album, Media } from './types.js'
+import type { Album, Media } from 'shared'
 
 const app = express()
 

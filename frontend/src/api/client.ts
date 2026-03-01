@@ -1,4 +1,4 @@
-import type { CreateAlbumResponse, GetAlbumResponse, MediaListItem } from '../types'
+import type { CreateAlbumResponse, GetAlbumResponse, MediaListItem } from 'shared'
 
 export type { CreateAlbumResponse, GetAlbumResponse, MediaListItem }
 

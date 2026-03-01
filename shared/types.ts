@@ -1,5 +1,5 @@
 /**
- * Shared API and Firestore types. Keep in sync with frontend/src/types.ts.
+ * Shared API and Firestore types. Single source of truth for backend and frontend.
  */
 
 /** Album document (Firestore). */

@@ -4,25 +4,28 @@ Just got back from an amazing vacation with hundreds of stunning photos? Don't l
 
 ## How to start the app
 
-1. **Install dependencies** (from repo root):
+The app has a **shared** package (types and optional utils) used by both backend and frontend. Build shared first, then backend/frontend.
+
+1. **Shared** (from repo root):
 
    ```bash
-   npm install
+   cd shared && npm install && npm run build && cd ..
    ```
 
-2. **Backend** – Copy the env example and start the API:
+2. **Backend** – Install, copy env example, build, and start:
 
    ```bash
-   cp backend/.env-local-example backend/.env
-   cd backend && npm run build && npm run start
+   cd backend && npm install
+   cp .env-local-example .env
+   npm run build && npm run start
    ```
 
    Backend runs at <http://localhost:3001>.
 
-3. **Frontend** – In another terminal, start the dev server:
+3. **Frontend** – In another terminal, install and start the dev server:
 
    ```bash
-   cd frontend && npm run dev
+   cd frontend && npm install && npm run dev
    ```
 
    Open <http://localhost:5173> in your browser.
@@ -47,9 +50,10 @@ Backend reads config from `backend/.env`. For the full list with placeholders, s
 
 Deploys the frontend (Hosting), Firestore rules, and Storage rules.
 
-1. **Build the frontend** (required before deploying hosting):
+1. **Build shared and frontend** (shared must be built before frontend):
 
    ```bash
+   cd shared && npm run build && cd ..
    cd frontend && npm run build
    ```
 
@@ -73,11 +77,11 @@ Deploys the frontend (Hosting), Firestore rules, and Storage rules.
 
 ## Deploy backend to Cloud Run
 
-Build the container with **Cloud Build** (recommended; runs on amd64), then deploy. From repo root (replace `YOUR_PROJECT_ID`):
+The backend image is built from the **repo root** (so the Dockerfile can include the `shared` package). Use **Cloud Build** (recommended; runs on amd64), then deploy. From repo root (replace `YOUR_PROJECT_ID`):
 
 ```bash
 gcloud services enable cloudbuild.googleapis.com
-gcloud builds submit --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api ./backend
+gcloud builds submit -f backend/Dockerfile --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api .
 gcloud run deploy pic-stream-api \
   --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api \
   --region us-east1 \
@@ -105,6 +109,16 @@ Deploy in this order so the frontend points at the live API:
    firebase deploy --only hosting
    ```
    Or run `firebase deploy` from the repo root to update hosting plus Firestore/Storage rules.
+
+## Project structure
+
+| Path | Description |
+|------|--------------|
+| `shared/` | Shared TypeScript types (and optional utils) for backend and frontend. Build with `npm run build` before building backend or frontend. |
+| `backend/` | Express API (Node.js). Depends on `shared` via `file:../shared`. |
+| `frontend/` | React SPA (Vite). Depends on `shared` via `file:../shared`. |
+| `docs/` | Firebase, Cloud Run, and schema docs. |
+| `plan/` | Work items and implementation plans. |
 
 ## Technical Requirements
 
