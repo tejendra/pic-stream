@@ -95,15 +95,15 @@ Firestore schema, Storage path conventions, and shared types so both frontend an
 - [x] Path helper exists and rejects invalid input
 - [x] Valid input produces paths under `albums/{albumId}/` only
 
-#### 2.3 Add shared TypeScript types
+#### 2.3 Add shared TypeScript types [DONE]
 
 **Description**: Add TypeScript interfaces in `backend/src/types.ts` for Album, Media, and upload request/response shapes. Add matching interfaces in `frontend/src/types.ts` (same field names and types). Backend and frontend use their local types for all API payloads.
 
 **Acceptance Criteria**:
 
-- [ ] Backend code imports from `backend/src/types.ts`
-- [ ] Frontend code imports from `frontend/src/types.ts`
-- [ ] Types match so request/response shapes are consistent
+- [x] Backend code imports from `backend/src/types.ts`
+- [x] Frontend code imports from `frontend/src/types.ts`
+- [x] Types match so request/response shapes are consistent
 
 ---
 

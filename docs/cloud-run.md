@@ -45,20 +45,20 @@ From the **repo root**. Enable the Cloud Build API if you haven’t:
 gcloud services enable cloudbuild.googleapis.com
 ```
 
-Then build and push in one command (replace `YOUR_PROJECT_ID`):
+Then build and push in one command (replace `YOUR_PROJECT_ID`). The image is built from repo root so the Dockerfile can include the `shared` package:
 
 ```bash
-gcloud builds submit --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api ./backend
+gcloud builds submit -f backend/Dockerfile --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api .
 ```
 
 Cloud Build runs the build on amd64, pushes the image to Artifact Registry, and you skip step 3.
 
 **Option B: Build locally (Intel/AMD or if you’ve verified amd64)**
 
-From the **repo root**:
+From the **repo root** (context is `.` so the Dockerfile can include `shared`):
 
 ```bash
-docker build --platform linux/amd64 -t us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api ./backend
+docker build -f backend/Dockerfile --platform linux/amd64 -t us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api .
 ```
 
 Confirm the image is amd64: `docker inspect us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api --format '{{.Architecture}}'` (should print `amd64`). Then push (step 3).

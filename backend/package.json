@@ -7,6 +7,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "shared": "file:../shared",
     "express": "^4.21.1",
     "firebase-admin": "^12.7.0"
   },
