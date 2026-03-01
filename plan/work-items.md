@@ -56,14 +56,14 @@ Scaffolding, tooling, and shared configuration so frontend and backend can run a
 - [x] Deploy order documented: deploy backend → set `VITE_API_URL` to Cloud Run URL → build frontend → deploy hosting
 - [x] Docs: how Firebase is used ([docs/firebase.md](../docs/firebase.md)), how to configure and deploy Cloud Run ([docs/cloud-run.md](../docs/cloud-run.md))
 
-#### 1.5 Define environment variables
+#### 1.5 Define environment variables [DONE]
 
 **Description**: Define backend env vars: `JWT_SECRET`, `CRON_SECRET`, `GOOGLE_CLOUD_PROJECT`, `FIREBASE_STORAGE_BUCKET`. Document them in `backend/.env.example` with placeholder values. No real secrets committed.
 
 **Acceptance Criteria**:
 
-- [ ] `backend/.env.example` lists those four variables
-- [ ] No secrets appear in the repo
+- [x] `backend/.env.example` lists those four variables
+- [x] No secrets appear in the repo
 
 ---
 
