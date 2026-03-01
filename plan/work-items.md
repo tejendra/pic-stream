@@ -85,15 +85,15 @@ Firestore schema, Storage path conventions, and shared types so both frontend an
 - [x] Composite index on media by albumId + createdAt is created and deployed
 - [x] Queries by deleteOn and by albumId+createdAt run without error
 
-#### 2.2 Document Storage path layout and path helper
+#### 2.2 Document Storage path layout and path helper [DONE]
 
 **Description**: Document Storage path layout: `albums/{albumId}/originals/{uniqueId}_{sanitizedFilename}`, `albums/{albumId}/previews/{uniqueId}_{sanitizedFilename}`, `albums/{albumId}/thumbnails/{uniqueId}.jpg`. Implement a path helper that rejects any segment containing `..`, limits path length to 200 characters, and allows only `[a-zA-Z0-9._-]` in filenames.
 
 **Acceptance Criteria**:
 
-- [ ] All Storage paths follow the documented layout
-- [ ] Path helper exists and rejects invalid input
-- [ ] Valid input produces paths under `albums/{albumId}/` only
+- [x] All Storage paths follow the documented layout
+- [x] Path helper exists and rejects invalid input
+- [x] Valid input produces paths under `albums/{albumId}/` only
 
 #### 2.3 Add shared TypeScript types
 
