@@ -42,6 +42,17 @@ Use this structure in the plan doc:
 
 ## Constraints
 
+### Git identity (Cursor Agent)
+
+When creating branches and committing on behalf of the user, set local git config so commits are attributed to Cursor:
+
+```bash
+git config user.name "Cursor Agent"
+git config user.email "agent@cursor.ai"
+```
+
+Run this once per repo (or before the first commit) when implementing work items. Use `git config` without `--global` so it applies only to this repository.
+
 ### How to create feature branch
 
 ```bash
