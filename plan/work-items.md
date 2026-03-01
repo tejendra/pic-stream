@@ -171,15 +171,15 @@ User can open an existing album by entering the seed or by choosing a recent alb
 
 ### User Stories
 
-#### 4.1 Open album flow (frontend)
+#### 4.1 Open album flow (frontend) [DONE]
 
 **Description**: Frontend: "Open album" page with a single text input for the 5-word seed. On submit POST `/api/albums/open` with body `{ seed: inputValue }`. On 200 store token in localStorage under `album_${albumId}` and redirect to `/album/${albumId}`. On 401 show error message "Invalid seed".
 
 **Acceptance Criteria**:
 
-- [ ] User can paste or type the seed and submit
-- [ ] Success stores token and redirects to album page
-- [ ] Invalid seed shows "Invalid seed"
+- [x] User can paste or type the seed and submit
+- [x] Success stores token and redirects to album page
+- [x] Invalid seed shows "Invalid seed"
 
 #### 4.2 Recent albums list (frontend)
 
