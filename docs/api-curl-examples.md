@@ -36,6 +36,17 @@ curl -X POST http://localhost:3001/api/albums/open \
 
 Use the `seed` value returned when you created the album.
 
+## Get album (requires JWT)
+
+**GET** `/api/albums/:id` – requires `Authorization: Bearer <token>` and token must have `albumId` equal to `:id`. Returns `200` with album details or `401` if missing/invalid token or mismatch.
+
+```bash
+# Replace ALBUM_ID and TOKEN with values from create or open response
+curl -s http://localhost:3001/api/albums/ALBUM_ID -H "Authorization: Bearer TOKEN"
+```
+
+Without token or with wrong album id you get `401`.
+
 ---
 
-*More endpoints (GET album, upload, media, etc.) will be added here as they are implemented.*
+*More endpoints (upload, media, etc.) will be added here as they are implemented.*
