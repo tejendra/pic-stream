@@ -35,6 +35,74 @@ Backend reads config from `backend/.env`. Copy `backend/.env-local-example` to `
 |----------|---------|-------------|
 | `PORT` | `3001` | Port the backend server listens on. |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed origin for CORS (frontend dev server URL). |
+| `GOOGLE_CLOUD_PROJECT` | `pic-stream-34ace` | Firebase / Google Cloud project ID. Override for another project. |
+| `FIREBASE_STORAGE_BUCKET` | `pic-stream-34ace.appspot.com` | Firebase Storage bucket. Override for another project. |
+| `GOOGLE_APPLICATION_CREDENTIALS` | — | Path to service account JSON (local dev). Omit on Cloud Run. |
+
+**Frontend** (optional): set `VITE_API_URL` for API base URL (e.g. `http://localhost:3001`). Empty = same origin (use dev proxy).
+
+## Deploy to Firebase
+
+Deploys the frontend (Hosting), Firestore rules, and Storage rules.
+
+1. **Build the frontend** (required before deploying hosting):
+
+   ```bash
+   cd frontend && npm run build
+   ```
+
+2. **Deploy** (from repo root):
+
+   ```bash
+   firebase deploy
+   ```
+
+   This updates Hosting (from `frontend/dist`), Firestore rules, and Storage rules.
+
+   To deploy only one service:
+
+   ```bash
+   firebase deploy --only hosting      # frontend only
+   firebase deploy --only firestore   # Firestore rules + indexes only
+   firebase deploy --only storage     # Storage rules only
+   ```
+
+   Ensure you're logged in (`firebase login`) and the project is set (see `.firebaserc`). For more on how Firebase is used, see [docs/firebase.md](docs/firebase.md).
+
+## Deploy backend to Cloud Run
+
+Build the container with **Cloud Build** (recommended; runs on amd64), then deploy. From repo root (replace `YOUR_PROJECT_ID`):
+
+```bash
+gcloud services enable cloudbuild.googleapis.com
+gcloud builds submit --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api ./backend
+gcloud run deploy pic-stream-api \
+  --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api \
+  --region us-east1 \
+  --platform managed \
+  --set-env-vars "CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.appspot.com" \
+  --allow-unauthenticated
+```
+
+Full setup (Artifact Registry repo, env vars, IAM) is in [docs/cloud-run.md](docs/cloud-run.md).
+
+## Deploy order for production
+
+Deploy in this order so the frontend points at the live API:
+
+1. **Deploy the backend** (Cloud Run) using the steps above. Note the service URL (e.g. `https://pic-stream-api-xxxxx-ue.a.run.app`).
+
+2. **Build the frontend** with that URL so the app calls your API in production:
+   ```bash
+   cd frontend
+   VITE_API_URL=https://YOUR_CLOUD_RUN_URL npm run build
+   ```
+
+3. **Deploy the frontend** (Firebase Hosting):
+   ```bash
+   firebase deploy --only hosting
+   ```
+   Or run `firebase deploy` from the repo root to update hosting plus Firestore/Storage rules.
 
 ## Technical Requirements
 

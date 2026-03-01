@@ -1,5 +1,7 @@
 import express from 'express'
-import { config } from './config.js'
+import { config, isFirebaseConfigured } from './config.js'
+import { readDoc, writeDoc } from './lib/firestore.js'
+import { getSignedDownloadUrl } from './lib/storage.js'
 
 const app = express()
 
@@ -16,6 +18,28 @@ app.options('*', (_req, res) => res.sendStatus(204))
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
+})
+
+app.get('/api/firebase-status', async (_req, res) => {
+  if (!isFirebaseConfigured) {
+    return res.json({ configured: false })
+  }
+  try {
+    const testId = `status-${Date.now()}`
+    await writeDoc('_firebase_status', testId, { at: new Date().toISOString() })
+    const read = await readDoc('_firebase_status', testId)
+    const signedUrl = await getSignedDownloadUrl('_status/test.txt')
+    res.json({
+      configured: true,
+      firestore: Boolean(read),
+      signedUrlGenerated: Boolean(signedUrl),
+    })
+  } catch (err) {
+    res.status(503).json({
+      configured: true,
+      error: err instanceof Error ? err.message : 'Firebase error',
+    })
+  }
 })
 
 app.listen(config.port, () => {

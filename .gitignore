@@ -1,4 +1,9 @@
 node_modules/
 dist/
+*.tsbuildinfo
 .env
 backend/.env
+.docker/
+.firebase/
+
+.DS_Store
