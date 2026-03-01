@@ -1,3 +1,7 @@
+import type { CreateAlbumResponse, GetAlbumResponse, MediaListItem } from '../types'
+
+export type { CreateAlbumResponse, GetAlbumResponse, MediaListItem }
+
 /**
  * API base URL. Set VITE_API_URL in env; empty = same origin (dev proxy).
  */
