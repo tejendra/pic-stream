@@ -133,15 +133,15 @@ End-to-end flow for creating an album and opening an album with the 5-word seed;
 - [x] Album doc has seedHash, not plain seed
 - [x] Seed does not appear in any log
 
-#### 3.3 Implement open album API
+#### 3.3 Implement open album API [DONE]
 
 **Description**: Implement POST `/api/albums/open` with body `{ seed: string }`. Query albums and find the one where `bcrypt.compare(seed, album.seedHash)` is true. If found, return 200 with `{ token }` where token is a JWT (payload: albumId, exp 24h, creator: false). If not found, return 401.
 
 **Acceptance Criteria**:
 
-- [ ] Correct seed returns 200 and a JWT with albumId and exp
-- [ ] Wrong seed returns 401
-- [ ] Token from open has creator: false
+- [x] Correct seed returns 200 and a JWT with albumId and exp
+- [x] Wrong seed returns 401
+- [x] Token from open has creator: false
 
 #### 3.4 Implement JWT middleware
 

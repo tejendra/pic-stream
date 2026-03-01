@@ -26,3 +26,10 @@ export async function readDoc<T = admin.firestore.DocumentData>(
   const snap = await db.collection(collection).doc(id).get()
   return (snap.exists ? snap.data() : null) as T | null
 }
+
+export async function listAlbums(): Promise<Array<{ id: string } & admin.firestore.DocumentData>> {
+  const db = getFirestore()
+  if (!db) return []
+  const snap = await db.collection('albums').get()
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+}

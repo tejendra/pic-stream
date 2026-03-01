@@ -24,6 +24,18 @@ curl -X POST http://localhost:3001/api/albums \
   -d '{"name":"Test","deleteOn":"2025-12-31","createdBy":"Me"}'
 ```
 
+## Open album
+
+**POST** `/api/albums/open` – body: `{ seed: string }`. Returns `200` with `{ token }` (JWT, creator: false) or `401` if seed does not match any album.
+
+```bash
+curl -X POST http://localhost:3001/api/albums/open \
+  -H "Content-Type: application/json" \
+  -d '{"seed":"your five word seed here"}'
+```
+
+Use the `seed` value returned when you created the album.
+
 ---
 
-*More endpoints (open album, GET album, upload, media, etc.) will be added here as they are implemented.*
+*More endpoints (GET album, upload, media, etc.) will be added here as they are implemented.*
