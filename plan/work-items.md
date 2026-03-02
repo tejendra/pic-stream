@@ -469,7 +469,17 @@ Scheduled job deletes albums whose deleteOn date has passed.
 - [ ] Invalid auth returns 401
 - [ ] All albums with deleteOn <= today are removed
 
-#### 10.2 Document cron trigger
+#### 10.2 Cleanup orphan Storage objects (Could have)
+
+**Description**: Files uploaded to Storage via the signed URL (after prepare) but never finalized leave orphan objects: they exist under `albums/{albumId}/originals/` but have no corresponding media doc. Backend: add a cleanup step (e.g. same cron as delete-expired or a separate scheduled job) that finds such objects and deletes them. For example: list objects under `albums/*/originals/` (or per-album); for each object, if no media doc in that album has that `storagePath`, and the object is older than a grace period (e.g. 15 min, to avoid deleting uploads that are about to be finalized), delete the object. Protect the endpoint with `CRON_SECRET` or equivalent. Document in README or upload-flow doc.
+
+**Acceptance Criteria**:
+
+- [ ] Orphan objects (uploaded to Storage but no media doc) are identified and deleted after grace period
+- [ ] Grace period avoids deleting objects whose finalize is in progress
+- [ ] Cleanup is authenticated (e.g. CRON_SECRET) and documented
+
+#### 10.3 Document cron trigger
 
 **Description**: Document in README: "Cron: Send POST to https://<cloud-run-url>/api/cron/delete-expired with header Authorization: Bearer $CRON_SECRET. Example schedule: daily at 02:00 UTC. To test: curl -X POST -H 'Authorization: Bearer $CRON_SECRET' https://<url>/api/cron/delete-expired"
 

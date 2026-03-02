@@ -194,8 +194,13 @@ function isValidPrepareBody(body: unknown): body is PrepareUploadRequest {
 }
 
 /**
- * POST /api/albums/:albumId/upload/prepare – validate, build paths, return signed upload URLs.
- * 6.1 MIME allowlist, 6.2 magic-byte at finalize, 6.3 size/count limits, 6.4 path safety, 6.5 rate limit.
+ * POST /api/albums/:albumId/upload/prepare
+ *
+ * Step 1 of the upload flow: client sends a list of files (filename, size, mimeType). Server
+ * validates MIME allowlist, size (≤500MB), count (≤25), path safety; checks duplicates by
+ * filename|size; builds storage paths and signed upload URLs; stores session (uploadId → mimeType,
+ * path, size, duplicateKey) for finalize. Client then uploads each file directly to the signed
+ * URL (see docs/upload-flow.md).
  */
 router.post(
   '/:albumId/upload/prepare',
@@ -295,7 +300,12 @@ function isValidFinalizeBody(body: unknown): body is FinalizeUploadRequest {
 }
 
 /**
- * POST /api/albums/:albumId/upload/finalize – validate path & magic bytes, create media docs.
+ * POST /api/albums/:albumId/upload/finalize
+ *
+ * Step 3 of the upload flow: after the client has uploaded files to Storage via the signed URLs,
+ * it sends uploadId, storagePath, uploaderName (and optional displayName) per file. Server
+ * validates path scope, looks up session from prepare, downloads first 512 bytes and runs
+ * magic-byte check, then creates media docs and (for video) a pending job. See docs/upload-flow.md.
  */
 router.post(
   '/:albumId/upload/finalize',
