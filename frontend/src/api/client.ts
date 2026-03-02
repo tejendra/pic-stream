@@ -74,6 +74,37 @@ export async function getAlbum(
   return res.json() as Promise<GetAlbumResponse>
 }
 
+export async function patchAlbum(
+  albumId: string,
+  token: string,
+  body: { deleteOn?: string; name?: string }
+): Promise<GetAlbumResponse> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Update album failed')
+  }
+  return res.json() as Promise<GetAlbumResponse>
+}
+
+export async function deleteAlbum(albumId: string, token: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok && res.status !== 204) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Delete album failed')
+  }
+}
+
 export async function openAlbum(seed: string): Promise<{
   token: string
   albumId: string

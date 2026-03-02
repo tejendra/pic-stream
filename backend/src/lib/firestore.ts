@@ -17,6 +17,16 @@ export async function writeDoc(
   await db.collection(collection).doc(id).set(data)
 }
 
+export async function updateDoc(
+  collection: string,
+  id: string,
+  data: admin.firestore.UpdateData<admin.firestore.DocumentData>
+): Promise<void> {
+  const db = getFirestore()
+  if (!db) return
+  await db.collection(collection).doc(id).update(data)
+}
+
 export async function readDoc<T = admin.firestore.DocumentData>(
   collection: string,
   id: string
@@ -32,4 +42,38 @@ export async function listAlbums(): Promise<Array<{ id: string } & admin.firesto
   if (!db) return []
   const snap = await db.collection('albums').get()
   return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+}
+
+export interface MediaDocPaths {
+  id: string
+  storagePath: string
+  previewPath: string | null
+  thumbnailPath: string
+}
+
+export async function listMedia(albumId: string): Promise<MediaDocPaths[]> {
+  const db = getFirestore()
+  if (!db) return []
+  const snap = await db.collection('albums').doc(albumId).collection('media').get()
+  return snap.docs.map((doc) => {
+    const d = doc.data()
+    return {
+      id: doc.id,
+      storagePath: (d.storagePath as string) ?? '',
+      previewPath: (d.previewPath as string | null) ?? null,
+      thumbnailPath: (d.thumbnailPath as string) ?? '',
+    }
+  })
+}
+
+export async function deleteDoc(collection: string, id: string): Promise<void> {
+  const db = getFirestore()
+  if (!db) return
+  await db.collection(collection).doc(id).delete()
+}
+
+export async function deleteMediaDoc(albumId: string, mediaId: string): Promise<void> {
+  const db = getFirestore()
+  if (!db) return
+  await db.collection('albums').doc(albumId).collection('media').doc(mediaId).delete()
 }

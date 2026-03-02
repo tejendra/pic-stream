@@ -30,3 +30,8 @@ export function addToRecentAlbums(albumId: string, name: string): void {
   const updated: RecentAlbum[] = [{ albumId, name }, ...filtered].slice(0, MAX_RECENT)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
 }
+
+export function removeFromRecentAlbums(albumId: string): void {
+  const list = getRecentAlbums().filter((a) => a.albumId !== albumId)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+}
