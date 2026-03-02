@@ -199,43 +199,53 @@ Creator can view album details, change delete date, and delete the entire album.
 
 ### User Stories
 
-#### 5.1 Get album details API
+#### 5.1 Get album details API [DONE]
 
-**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
+**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ id, name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
 
 **Acceptance Criteria**:
 
-- [ ] Authenticated request with matching albumId returns 200 and the four fields
-- [ ] Mismatch returns 403
+- [x] Authenticated request with matching albumId returns 200 and the four fields
+- [x] Mismatch returns 403
 
-#### 5.2 Update album API
+#### 5.2 Update album API [DONE]
 
 **Description**: Backend: PATCH `/api/albums/:id` (auth: album token, require `req.albumToken.creator === true`). Body: `{ deleteOn?: string, name?: string }`. Update Firestore album doc. Return 200 with updated album. Return 403 if not creator.
 
 **Acceptance Criteria**:
 
-- [ ] Creator can PATCH and get 200 with updated album
-- [ ] Non-creator gets 403
-- [ ] Firestore doc is updated
+- [x] Creator can PATCH and get 200 with updated album
+- [x] Non-creator gets 403
+- [x] Firestore doc is updated
 
-#### 5.3 Delete album API
+#### 5.3 Delete album API [DONE]
 
 **Description**: Backend: DELETE `/api/albums/:id` (auth: album token, require creator). List all media in subcollection; delete each object from Storage (storagePath, previewPath, thumbnailPath); delete each media doc; delete album doc. Return 204. Return 403 if not creator.
 
 **Acceptance Criteria**:
 
-- [ ] Creator gets 204 and album + media are removed from Firestore and Storage
-- [ ] Non-creator gets 403
+- [x] Creator gets 204 and album + media are removed from Firestore and Storage
+- [x] Non-creator gets 403
 
-#### 5.4 Album management UI (frontend)
+#### 5.4 Album management UI (frontend) [DONE]
 
 **Description**: Frontend: Album page loads GET `/api/albums/:id`. If `response.isCreator` is true, show "Edit delete date" and "Delete album". Edit: modal with date input, on save PATCH with `{ deleteOn }`. Delete: confirm "Delete entire album? This cannot be undone.", on confirm DELETE then redirect to `/` and remove this albumId from localStorage `recentAlbums` and `album_${albumId}`.
 
 **Acceptance Criteria**:
 
-- [ ] Creator sees both controls (Edit delete date, Delete album)
-- [ ] Edit updates date via PATCH
-- [ ] Delete shows confirmation and then redirects and clears localStorage for this album
+- [x] Creator sees both controls (Edit delete date, Delete album)
+- [x] Edit updates date via PATCH
+- [x] Delete shows confirmation and then redirects and clears localStorage for this album
+
+#### 5.5 Remove creator role [DONE]
+
+**Description**: Remove the notion of creator role. Anyone with a valid album token (from create or open) can view album details, edit the delete date (PATCH), and delete the album (DELETE). Backend: drop `requireCreator` from PATCH and DELETE; stop returning `isCreator` from GET and PATCH; remove `creator` from JWT payloads. Frontend: show "Edit delete date" and "Delete album" for all users who can load the album.
+
+**Acceptance Criteria**:
+
+- [x] PATCH and DELETE accept any valid album token (no creator check)
+- [x] GET and PATCH responses no longer include `isCreator`
+- [x] Album page shows Edit delete date and Delete album for everyone with access
 
 ---
 

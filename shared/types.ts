@@ -61,8 +61,15 @@ export interface GetAlbumResponse {
   name: string
   deleteOn: string
   createdBy: string
-  isCreator?: boolean
 }
+
+/** PATCH /api/albums/:id */
+export interface UpdateAlbumRequest {
+  deleteOn?: string
+  name?: string
+}
+
+export type UpdateAlbumResponse = GetAlbumResponse
 
 /** POST /api/albums/:albumId/upload/prepare */
 export interface PrepareUploadFile {

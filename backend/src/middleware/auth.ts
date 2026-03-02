@@ -5,7 +5,7 @@ import { config } from '../config.js'
 /**
  * Verifies Authorization: Bearer <token>, decodes with JWT_SECRET, and ensures
  * token.albumId matches route param :id or :albumId. Sets req.albumToken on success.
- * Returns 401 if header missing, token invalid, or albumId mismatch.
+ * Returns 401 if header missing or token invalid/expired; 403 if token.albumId does not match route param.
  */
 export function requireAlbumToken(req: Request, res: Response, next: NextFunction): void {
   const auth = req.headers.authorization
@@ -35,7 +35,7 @@ export function requireAlbumToken(req: Request, res: Response, next: NextFunctio
 
   const albumId = req.params.id ?? req.params.albumId
   if (!albumId || decoded.albumId !== albumId) {
-    res.status(401).json({ error: 'Token does not match album' })
+    res.status(403).json({ error: 'Token does not match album' })
     return
   }
 

@@ -37,3 +37,17 @@ export async function getSignedDownloadUrl(
   })
   return url
 }
+
+export async function deleteFile(path: string): Promise<void> {
+  const bucket = getBucket()
+  if (!bucket) return
+  const file = bucket.file(path)
+  try {
+    await file.delete()
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'code' in err && (err as { code: number }).code === 404) {
+      return
+    }
+    throw err
+  }
+}
