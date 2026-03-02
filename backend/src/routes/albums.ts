@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { randomUUID } from 'crypto'
 import { config } from '../config.js'
 import { requireAlbumToken } from '../middleware/auth.js'
@@ -48,7 +48,8 @@ const uploadRateLimiter = rateLimit({
   max: 30,
   message: { error: 'Too many requests' },
   standardHeaders: true,
-  keyGenerator: (req) => req.headers.authorization ?? req.ip ?? 'unknown',
+  keyGenerator: (req) =>
+    req.headers.authorization ?? (req.ip ? ipKeyGenerator(req.ip) : 'unknown'),
 })
 
 const TOKEN_EXPIRY_HOURS = 24
