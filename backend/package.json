@@ -7,12 +7,13 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "shared": "file:../shared",
     "bcrypt": "^5.1.1",
-    "jsonwebtoken": "^9.0.2",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "firebase-admin": "^12.7.0"
+    "express-rate-limit": "^8.2.1",
+    "firebase-admin": "^12.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "shared": "file:../shared"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

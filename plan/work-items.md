@@ -249,56 +249,56 @@ Creator can view album details, change delete date, and delete the entire album.
 
 ---
 
-## Feature 6: Upload validation and security (Must have)
+## Feature 6: Upload validation and security (Must have) [DONE]
 
 Validate all uploads: type, size, count, duplicate, and path safety. No execution of user content.
 
 ### User Stories
 
-#### 6.1 MIME allowlist
+#### 6.1 MIME allowlist [DONE]
 
 **Description**: Backend: MIME allowlist is exactly image/jpeg, image/png, image/webp, image/gif, video/mp4, video/webm. Reject any other MIME with 400 and body `{ error: "File type not allowed" }`.
 
 **Acceptance Criteria**:
 
-- [ ] Only those six MIME types are accepted
-- [ ] Any other returns 400 with that message
+- [x] Only those six MIME types are accepted
+- [x] Any other returns 400 with that message
 
-#### 6.2 Magic-byte check
+#### 6.2 Magic-byte check [DONE]
 
 **Description**: Backend: Implement magic-byte check for the six types (JPEG, PNG, WebP, GIF, MP4, WebM). Reject with 400 and body `{ error: "Invalid file signature" }` if the file header does not match the declared MIME.
 
 **Acceptance Criteria**:
 
-- [ ] Files with correct magic bytes for their MIME pass
-- [ ] Mismatch returns 400 with that message
+- [x] Files with correct magic bytes for their MIME pass
+- [x] Mismatch returns 400 with that message
 
-#### 6.3 File size and count limits
+#### 6.3 File size and count limits [DONE]
 
 **Description**: Backend: Enforce max file size 500MB per file and max 25 files per prepare request. Return 400 with body `{ error: "File too large" }` or `{ error: "Too many files" }` when exceeded.
 
 **Acceptance Criteria**:
 
-- [ ] Over 500MB per file returns 400 "File too large"
-- [ ] Over 25 files returns 400 "Too many files"
+- [x] Over 500MB per file returns 400 "File too large"
+- [x] Over 25 files returns 400 "Too many files"
 
-#### 6.4 Path safety and signed URL scope
+#### 6.4 Path safety and signed URL scope [DONE]
 
 **Description**: Backend: All Storage paths are under `albums/{albumId}/`. Path helper sanitizes filenames (no `..`, max 200 chars, only `[a-zA-Z0-9._-]`). Signed URLs are generated only for paths under the requesting album's folder. Reject any path containing `..` or absolute segments with 400.
 
 **Acceptance Criteria**:
 
-- [ ] No path leaves the album folder
-- [ ] Signed URLs only reference that album's paths
-- [ ] Invalid path returns 400
+- [x] No path leaves the album folder
+- [x] Signed URLs only reference that album's paths
+- [x] Invalid path returns 400
 
-#### 6.5 Rate limiting (Could have)
+#### 6.5 Rate limiting (Could have) [DONE]
 
 **Description**: Backend: Add express-rate-limit on POST `/api/albums/:albumId/upload/prepare` and POST `.../upload/finalize`: 30 requests per 15 minutes per album token. Return 429 when exceeded.
 
 **Acceptance Criteria**:
 
-- [ ] When implemented: more than 30 requests in 15 minutes from the same token returns 429
+- [x] When implemented: more than 30 requests in 15 minutes from the same token returns 429
 
 ---
 
@@ -469,7 +469,17 @@ Scheduled job deletes albums whose deleteOn date has passed.
 - [ ] Invalid auth returns 401
 - [ ] All albums with deleteOn <= today are removed
 
-#### 10.2 Document cron trigger
+#### 10.2 Cleanup orphan Storage objects (Could have)
+
+**Description**: Files uploaded to Storage via the signed URL (after prepare) but never finalized leave orphan objects: they exist under `albums/{albumId}/originals/` but have no corresponding media doc. Backend: add a cleanup step (e.g. same cron as delete-expired or a separate scheduled job) that finds such objects and deletes them. For example: list objects under `albums/*/originals/` (or per-album); for each object, if no media doc in that album has that `storagePath`, and the object is older than a grace period (e.g. 15 min, to avoid deleting uploads that are about to be finalized), delete the object. Protect the endpoint with `CRON_SECRET` or equivalent. Document in README or upload-flow doc.
+
+**Acceptance Criteria**:
+
+- [ ] Orphan objects (uploaded to Storage but no media doc) are identified and deleted after grace period
+- [ ] Grace period avoids deleting objects whose finalize is in progress
+- [ ] Cleanup is authenticated (e.g. CRON_SECRET) and documented
+
+#### 10.3 Document cron trigger
 
 **Description**: Document in README: "Cron: Send POST to https://<cloud-run-url>/api/cron/delete-expired with header Authorization: Bearer $CRON_SECRET. Example schedule: daily at 02:00 UTC. To test: curl -X POST -H 'Authorization: Bearer $CRON_SECRET' https://<url>/api/cron/delete-expired"
 
