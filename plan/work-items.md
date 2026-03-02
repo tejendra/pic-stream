@@ -199,14 +199,14 @@ Creator can view album details, change delete date, and delete the entire album.
 
 ### User Stories
 
-#### 5.1 Get album details API
+#### 5.1 Get album details API [DONE]
 
-**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
+**Description**: Backend: GET `/api/albums/:id` (auth: album token). Return 200 with `{ id, name, deleteOn, createdBy, isCreator }` where isCreator is `req.albumToken.creator === true`. Return 403 if token.albumId does not match id.
 
 **Acceptance Criteria**:
 
-- [ ] Authenticated request with matching albumId returns 200 and the four fields
-- [ ] Mismatch returns 403
+- [x] Authenticated request with matching albumId returns 200 and the four fields
+- [x] Mismatch returns 403
 
 #### 5.2 Update album API
 
