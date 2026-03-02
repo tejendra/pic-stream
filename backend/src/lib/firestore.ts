@@ -66,6 +66,29 @@ export async function listMedia(albumId: string): Promise<MediaDocPaths[]> {
   })
 }
 
+/** Returns set of duplicateKey values for the album (for prepare duplicate check). */
+export async function getExistingDuplicateKeys(albumId: string): Promise<Set<string>> {
+  const db = getFirestore()
+  if (!db) return new Set()
+  const snap = await db.collection('albums').doc(albumId).collection('media').get()
+  const keys = new Set<string>()
+  for (const doc of snap.docs) {
+    const key = doc.data().duplicateKey as string | undefined
+    if (typeof key === 'string') keys.add(key)
+  }
+  return keys
+}
+
+export async function writeMediaDoc(
+  albumId: string,
+  mediaId: string,
+  data: admin.firestore.DocumentData
+): Promise<void> {
+  const db = getFirestore()
+  if (!db) return
+  await db.collection('albums').doc(albumId).collection('media').doc(mediaId).set(data)
+}
+
 export async function deleteDoc(collection: string, id: string): Promise<void> {
   const db = getFirestore()
   if (!db) return

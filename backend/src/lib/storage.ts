@@ -38,6 +38,36 @@ export async function getSignedDownloadUrl(
   return url
 }
 
+/**
+ * Download the first maxBytes of a file from Storage (for magic-byte check).
+ * Returns empty buffer if file not found or read fails.
+ */
+export async function downloadFileHead(
+  path: string,
+  maxBytes: number = 512
+): Promise<Buffer> {
+  const bucket = getBucket()
+  if (!bucket) return Buffer.alloc(0)
+  const file = bucket.file(path)
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    let length = 0
+    const stream = file.createReadStream({ start: 0, end: maxBytes - 1 })
+    stream.on('data', (chunk: Buffer) => {
+      if (length + chunk.length <= maxBytes) {
+        chunks.push(chunk)
+        length += chunk.length
+      } else {
+        chunks.push(chunk.subarray(0, maxBytes - length))
+        length = maxBytes
+        stream.destroy()
+      }
+    })
+    stream.on('end', () => resolve(Buffer.concat(chunks)))
+    stream.on('error', reject)
+  })
+}
+
 export async function deleteFile(path: string): Promise<void> {
   const bucket = getBucket()
   if (!bucket) return

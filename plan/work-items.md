@@ -249,56 +249,56 @@ Creator can view album details, change delete date, and delete the entire album.
 
 ---
 
-## Feature 6: Upload validation and security (Must have)
+## Feature 6: Upload validation and security (Must have) [DONE]
 
 Validate all uploads: type, size, count, duplicate, and path safety. No execution of user content.
 
 ### User Stories
 
-#### 6.1 MIME allowlist
+#### 6.1 MIME allowlist [DONE]
 
 **Description**: Backend: MIME allowlist is exactly image/jpeg, image/png, image/webp, image/gif, video/mp4, video/webm. Reject any other MIME with 400 and body `{ error: "File type not allowed" }`.
 
 **Acceptance Criteria**:
 
-- [ ] Only those six MIME types are accepted
-- [ ] Any other returns 400 with that message
+- [x] Only those six MIME types are accepted
+- [x] Any other returns 400 with that message
 
-#### 6.2 Magic-byte check
+#### 6.2 Magic-byte check [DONE]
 
 **Description**: Backend: Implement magic-byte check for the six types (JPEG, PNG, WebP, GIF, MP4, WebM). Reject with 400 and body `{ error: "Invalid file signature" }` if the file header does not match the declared MIME.
 
 **Acceptance Criteria**:
 
-- [ ] Files with correct magic bytes for their MIME pass
-- [ ] Mismatch returns 400 with that message
+- [x] Files with correct magic bytes for their MIME pass
+- [x] Mismatch returns 400 with that message
 
-#### 6.3 File size and count limits
+#### 6.3 File size and count limits [DONE]
 
 **Description**: Backend: Enforce max file size 500MB per file and max 25 files per prepare request. Return 400 with body `{ error: "File too large" }` or `{ error: "Too many files" }` when exceeded.
 
 **Acceptance Criteria**:
 
-- [ ] Over 500MB per file returns 400 "File too large"
-- [ ] Over 25 files returns 400 "Too many files"
+- [x] Over 500MB per file returns 400 "File too large"
+- [x] Over 25 files returns 400 "Too many files"
 
-#### 6.4 Path safety and signed URL scope
+#### 6.4 Path safety and signed URL scope [DONE]
 
 **Description**: Backend: All Storage paths are under `albums/{albumId}/`. Path helper sanitizes filenames (no `..`, max 200 chars, only `[a-zA-Z0-9._-]`). Signed URLs are generated only for paths under the requesting album's folder. Reject any path containing `..` or absolute segments with 400.
 
 **Acceptance Criteria**:
 
-- [ ] No path leaves the album folder
-- [ ] Signed URLs only reference that album's paths
-- [ ] Invalid path returns 400
+- [x] No path leaves the album folder
+- [x] Signed URLs only reference that album's paths
+- [x] Invalid path returns 400
 
-#### 6.5 Rate limiting (Could have)
+#### 6.5 Rate limiting (Could have) [DONE]
 
 **Description**: Backend: Add express-rate-limit on POST `/api/albums/:albumId/upload/prepare` and POST `.../upload/finalize`: 30 requests per 15 minutes per album token. Return 429 when exceeded.
 
 **Acceptance Criteria**:
 
-- [ ] When implemented: more than 30 requests in 15 minutes from the same token returns 429
+- [x] When implemented: more than 30 requests in 15 minutes from the same token returns 429
 
 ---
 

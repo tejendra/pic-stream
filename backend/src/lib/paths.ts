@@ -50,3 +50,15 @@ export function buildStoragePath(
   const path = `albums/${albumId}/${type}/${uniqueId}_${sanitized}`
   return path.length <= MAX_STORAGE_PATH_LENGTH ? path : null
 }
+
+/** 6.4 Path safety: path must be under albums/{albumId}/, no '..', no absolute. */
+export function isPathUnderAlbum(albumId: string, path: string): boolean {
+  if (!path || path.includes('..')) return false
+  const normalized = path.replace(/\\/g, '/').trim()
+  if (normalized.startsWith('/')) return false
+  const prefix = `albums/${albumId}/`
+  if (!normalized.startsWith(prefix)) return false
+  const rest = normalized.slice(prefix.length)
+  if (rest === '' || rest.includes('/..') || rest.startsWith('..')) return false
+  return rest.split('/').every((seg) => isSegmentSafe(seg))
+}

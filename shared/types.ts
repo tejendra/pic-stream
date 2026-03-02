@@ -85,6 +85,7 @@ export interface PrepareUploadRequest {
 export interface PrepareUploadItem {
   uploadId: string
   signedUploadUrl: string
+  storagePath: string
 }
 
 export interface PrepareUploadResponse {

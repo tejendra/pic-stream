@@ -1,28 +1,55 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import rateLimit from 'express-rate-limit'
+import { randomUUID } from 'crypto'
 import { config } from '../config.js'
 import { requireAlbumToken } from '../middleware/auth.js'
 import {
   deleteDoc,
   deleteMediaDoc,
+  getExistingDuplicateKeys,
   getFirestore,
   listAlbums,
   listMedia,
   readDoc,
   updateDoc,
   writeDoc,
+  writeMediaDoc,
 } from '../lib/firestore.js'
-import { deleteFile } from '../lib/storage.js'
+import { deleteFile, downloadFileHead, getSignedUploadUrl } from '../lib/storage.js'
+import { buildStoragePath } from '../lib/paths.js'
+import {
+  checkMagicBytes,
+  isAllowedMimeType,
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILES_PER_PREPARE,
+} from '../lib/upload-validation.js'
+import { getUploadSession, setUploadSession } from '../lib/upload-session.js'
 import { generateSeed } from '../lib/seed.js'
 import type {
   CreateAlbumRequest,
   CreateAlbumResponse,
   OpenAlbumRequest,
   OpenAlbumResponse,
+  PrepareUploadRequest,
+  PrepareUploadResponse,
+  PrepareUploadFile,
+  FinalizeUploadRequest,
+  FinalizeUploadResponse,
 } from 'shared'
+import { isPathUnderAlbum } from '../lib/paths.js'
 
 const router = Router()
+
+/** 6.5 Rate limit: 30 requests per 15 minutes per album token (keyed by Authorization). */
+const uploadRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Too many requests' },
+  standardHeaders: true,
+  keyGenerator: (req) => req.headers.authorization ?? req.ip ?? 'unknown',
+})
 
 const TOKEN_EXPIRY_HOURS = 24
 
@@ -151,6 +178,221 @@ router.post('/open', async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Open album failed' })
   }
 })
+
+function isValidPrepareBody(body: unknown): body is PrepareUploadRequest {
+  if (typeof body !== 'object' || body === null || !('files' in body)) return false
+  const files = (body as PrepareUploadRequest).files
+  if (!Array.isArray(files)) return false
+  return files.every(
+    (f) =>
+      typeof f === 'object' &&
+      f !== null &&
+      typeof (f as PrepareUploadFile).filename === 'string' &&
+      typeof (f as PrepareUploadFile).size === 'number' &&
+      typeof (f as PrepareUploadFile).mimeType === 'string'
+  )
+}
+
+/**
+ * POST /api/albums/:albumId/upload/prepare – validate, build paths, return signed upload URLs.
+ * 6.1 MIME allowlist, 6.2 magic-byte at finalize, 6.3 size/count limits, 6.4 path safety, 6.5 rate limit.
+ */
+router.post(
+  '/:albumId/upload/prepare',
+  requireAlbumToken,
+  uploadRateLimiter,
+  async (req: Request, res: Response): Promise<void> => {
+    const albumId = req.params.albumId
+    if (!albumId) {
+      res.status(400).json({ error: 'Invalid album' })
+      return
+    }
+
+    if (!isValidPrepareBody(req.body)) {
+      res.status(400).json({ error: 'Invalid body: need files (array of { filename, size, mimeType })' })
+      return
+    }
+
+    const { files } = req.body
+
+    if (files.length > MAX_FILES_PER_PREPARE) {
+      res.status(400).json({ error: 'Too many files' })
+      return
+    }
+
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        res.status(400).json({ error: 'File too large' })
+        return
+      }
+      if (!isAllowedMimeType(file.mimeType)) {
+        res.status(400).json({ error: 'File type not allowed' })
+        return
+      }
+    }
+
+    const db = getFirestore()
+    if (!db) {
+      res.status(503).json({ error: 'Database unavailable' })
+      return
+    }
+
+    const album = await readDoc('albums', albumId)
+    if (!album) {
+      res.status(404).json({ error: 'Album not found' })
+      return
+    }
+
+    const existingKeys = await getExistingDuplicateKeys(albumId)
+    const uploads: PrepareUploadResponse['uploads'] = []
+    const duplicates: string[] = []
+
+    for (const file of files) {
+      const duplicateKey = `${file.filename}|${file.size}`
+      if (existingKeys.has(duplicateKey)) {
+        duplicates.push(file.filename)
+        continue
+      }
+
+      const uniqueId = randomUUID()
+      const storagePath = buildStoragePath(albumId, 'originals', uniqueId, file.filename)
+      if (!storagePath) {
+        res.status(400).json({ error: 'Invalid path' })
+        return
+      }
+
+      const signedUrl = await getSignedUploadUrl(storagePath)
+      if (!signedUrl) {
+        res.status(503).json({ error: 'Storage unavailable' })
+        return
+      }
+
+      const uploadId = randomUUID()
+      setUploadSession(uploadId, file.mimeType, storagePath, file.size, duplicateKey)
+      uploads.push({
+        uploadId,
+        signedUploadUrl: signedUrl,
+        storagePath,
+      })
+    }
+
+    res.status(200).json({ uploads, duplicates } satisfies PrepareUploadResponse)
+  }
+)
+
+function isValidFinalizeBody(body: unknown): body is FinalizeUploadRequest {
+  if (typeof body !== 'object' || body === null || !('uploads' in body)) return false
+  const uploads = (body as FinalizeUploadRequest).uploads
+  if (!Array.isArray(uploads)) return false
+  return uploads.every(
+    (u) =>
+      typeof u === 'object' &&
+      u !== null &&
+      typeof u.uploadId === 'string' &&
+      typeof u.storagePath === 'string' &&
+      typeof u.uploaderName === 'string'
+  )
+}
+
+/**
+ * POST /api/albums/:albumId/upload/finalize – validate path & magic bytes, create media docs.
+ */
+router.post(
+  '/:albumId/upload/finalize',
+  requireAlbumToken,
+  uploadRateLimiter,
+  async (req: Request, res: Response): Promise<void> => {
+    const albumId = req.params.albumId
+    if (!albumId) {
+      res.status(400).json({ error: 'Invalid album' })
+      return
+    }
+
+    if (!isValidFinalizeBody(req.body)) {
+      res.status(400).json({
+        error: 'Invalid body: need uploads (array of { uploadId, storagePath, uploaderName, displayName? })',
+      })
+      return
+    }
+
+    const db = getFirestore()
+    if (!db) {
+      res.status(503).json({ error: 'Database unavailable' })
+      return
+    }
+
+    const album = await readDoc('albums', albumId)
+    if (!album) {
+      res.status(404).json({ error: 'Album not found' })
+      return
+    }
+
+    const mediaIds: string[] = []
+
+    for (const item of req.body.uploads) {
+      if (!isPathUnderAlbum(albumId, item.storagePath)) {
+        res.status(400).json({ error: 'Invalid path' })
+        return
+      }
+
+      const session = getUploadSession(item.uploadId)
+      if (!session) {
+        res.status(400).json({ error: 'Invalid or expired upload session' })
+        return
+      }
+
+      if (session.storagePath !== item.storagePath) {
+        res.status(400).json({ error: 'Invalid path' })
+        return
+      }
+
+      const head = await downloadFileHead(item.storagePath, 512)
+      if (head.length < 12) {
+        res.status(400).json({ error: 'Invalid file signature' })
+        return
+      }
+      if (!checkMagicBytes(head, session.mimeType)) {
+        res.status(400).json({ error: 'Invalid file signature' })
+        return
+      }
+
+      const mediaId = db.collection('albums').doc(albumId).collection('media').doc().id
+      const createdAt = new Date().toISOString()
+      await writeMediaDoc(albumId, mediaId, {
+        id: mediaId,
+        albumId,
+        storagePath: item.storagePath,
+        previewPath: null,
+        thumbnailPath: '',
+        displayName: item.displayName ?? item.storagePath.replace(/^.*\//, ''),
+        uploaderName: item.uploaderName,
+        size: session.size,
+        mimeType: session.mimeType,
+        duplicateKey: session.duplicateKey,
+        createdAt,
+      })
+
+      const isVideo =
+        session.mimeType === 'video/mp4' || session.mimeType === 'video/webm'
+      if (isVideo) {
+        const jobId = db.collection('jobs').doc().id
+        const now = new Date().toISOString()
+        await writeDoc('jobs', jobId, {
+          id: jobId,
+          albumId,
+          mediaId,
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+        })
+      }
+
+      mediaIds.push(mediaId)
+    }
+
+    res.status(200).json({ mediaIds } satisfies FinalizeUploadResponse)
+  }
+)
 
 /**
  * GET /api/albums/:id – album details. Requires Authorization: Bearer <token> and token.albumId === :id.
