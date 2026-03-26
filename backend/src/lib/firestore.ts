@@ -70,6 +70,33 @@ export async function listMedia(albumId: string): Promise<MediaDocPaths[]> {
   })
 }
 
+/** Single media doc for URL signing and delete (same fields as list item). */
+export async function readMediaDoc(
+  albumId: string,
+  mediaId: string
+): Promise<MediaListItem | null> {
+  const db = getFirestore()
+  if (!db) return null
+  const snap = await db.collection('albums').doc(albumId).collection('media').doc(mediaId).get()
+  if (!snap.exists) return null
+  const d = snap.data()
+  if (!d) return null
+  return {
+    id: snap.id,
+    thumbnailPath:
+      d.thumbnailPath === undefined || d.thumbnailPath === null
+        ? null
+        : (d.thumbnailPath as string),
+    previewPath: (d.previewPath as string | null | undefined) ?? null,
+    storagePath: (d.storagePath as string) ?? '',
+    displayName: (d.displayName as string) ?? '',
+    uploaderName: (d.uploaderName as string) ?? '',
+    size: typeof d.size === 'number' ? d.size : 0,
+    mimeType: (d.mimeType as string) ?? '',
+    createdAt: (d.createdAt as string) ?? '',
+  }
+}
+
 /** List media in createdAt ascending order (for GET /api/albums/:albumId/media). */
 export async function listMediaByCreatedAt(albumId: string): Promise<MediaListItem[]> {
   const db = getFirestore()

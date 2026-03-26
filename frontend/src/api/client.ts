@@ -4,13 +4,16 @@ import type {
   FinalizeUploadRequest,
   FinalizeUploadResponse,
   GetAlbumResponse,
+  ListMediaResponse,
   MediaListItem,
+  MediaSignedUrlResponse,
+  MediaUrlType,
   OpenAlbumResponse,
   PrepareUploadFile,
   PrepareUploadResponse,
 } from 'shared'
 
-export type { CreateAlbumResponse, GetAlbumResponse, MediaListItem }
+export type { CreateAlbumResponse, GetAlbumResponse, ListMediaResponse, MediaListItem, MediaUrlType }
 
 /**
  * API base URL. Set VITE_API_URL in env; empty = same origin (dev proxy).
@@ -150,6 +153,58 @@ export async function prepareUpload(
     throw new Error((err as { error?: string }).error ?? 'Prepare upload failed')
   }
   return res.json() as Promise<PrepareUploadResponse>
+}
+
+/** GET /api/albums/:albumId/media – list media. */
+export async function listMedia(
+  albumId: string,
+  token: string
+): Promise<ListMediaResponse> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}/media`), {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Failed to list media')
+  }
+  return res.json() as Promise<ListMediaResponse>
+}
+
+/** GET /api/albums/:albumId/media/:mediaId/url – signed download URL. */
+export async function getMediaSignedUrl(
+  albumId: string,
+  token: string,
+  mediaId: string,
+  type: MediaUrlType
+): Promise<MediaSignedUrlResponse> {
+  const params = new URLSearchParams({ type })
+  const res = await fetch(
+    apiUrl(`/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}/url?${params}`),
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Failed to get media URL')
+  }
+  return res.json() as Promise<MediaSignedUrlResponse>
+}
+
+/** DELETE /api/albums/:albumId/media/:mediaId */
+export async function deleteMedia(
+  albumId: string,
+  token: string,
+  mediaId: string
+): Promise<void> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}`), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok && res.status !== 204) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Delete media failed')
+  }
 }
 
 /** POST /api/albums/:albumId/upload/finalize – create media docs after client uploads. */

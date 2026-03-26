@@ -13,12 +13,18 @@ import {
   listAlbums,
   listMedia,
   listMediaByCreatedAt,
+  readMediaDoc,
   readDoc,
   updateDoc,
   writeDoc,
   writeMediaDoc,
 } from '../lib/firestore.js'
-import { deleteFile, downloadFileHead, getSignedUploadUrl } from '../lib/storage.js'
+import {
+  deleteFile,
+  downloadFileHead,
+  getSignedDownloadUrl,
+  getSignedUploadUrl,
+} from '../lib/storage.js'
 import { buildStoragePath } from '../lib/paths.js'
 import {
   checkMagicBytes,
@@ -40,6 +46,7 @@ import type {
   FinalizeUploadRequest,
   FinalizeUploadResponse,
   ListMediaResponse,
+  MediaSignedUrlResponse,
 } from 'shared'
 import { isPathUnderAlbum } from '../lib/paths.js'
 
@@ -56,6 +63,9 @@ const uploadRateLimiter = rateLimit({
 })
 
 const TOKEN_EXPIRY_HOURS = 24
+
+/** Signed read URLs for media (GET …/url). */
+const SIGNED_MEDIA_DOWNLOAD_MS = 60 * 60 * 1000 // 1 hour
 
 function isValidCreateBody(body: unknown): body is CreateAlbumRequest {
   return (
@@ -437,6 +447,123 @@ router.get(
 
     const media = await listMediaByCreatedAt(albumId)
     res.status(200).json({ media } satisfies ListMediaResponse)
+  }
+)
+
+/**
+ * GET /api/albums/:albumId/media/:mediaId/url?type=original|preview|thumbnail
+ * Signed download URL (1 hour). Requires album token.
+ */
+router.get(
+  '/:albumId/media/:mediaId/url',
+  requireAlbumToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { albumId, mediaId } = req.params
+    if (!albumId || !mediaId) {
+      res.status(400).json({ error: 'Invalid request' })
+      return
+    }
+
+    const typeRaw = req.query.type
+    const type =
+      typeRaw === 'original' || typeRaw === 'preview' || typeRaw === 'thumbnail'
+        ? typeRaw
+        : null
+    if (!type) {
+      res.status(400).json({ error: 'Invalid type' })
+      return
+    }
+
+    const db = getFirestore()
+    if (!db) {
+      res.status(503).json({ error: 'Database unavailable' })
+      return
+    }
+
+    const album = await readDoc('albums', albumId)
+    if (!album) {
+      res.status(404).json({ error: 'Album not found' })
+      return
+    }
+
+    const media = await readMediaDoc(albumId, mediaId)
+    if (!media) {
+      res.status(404).json({ error: 'Media not found' })
+      return
+    }
+
+    let storagePath: string | null = null
+    if (type === 'original') storagePath = media.storagePath
+    else if (type === 'preview') storagePath = media.previewPath
+    else storagePath = media.thumbnailPath
+
+    if (!storagePath) {
+      res.status(400).json({ error: 'Not available for this type' })
+      return
+    }
+
+    if (!isPathUnderAlbum(albumId, storagePath)) {
+      res.status(500).json({ error: 'Invalid stored path' })
+      return
+    }
+
+    const url = await getSignedDownloadUrl(storagePath, SIGNED_MEDIA_DOWNLOAD_MS)
+    if (!url) {
+      res.status(503).json({ error: 'Storage unavailable' })
+      return
+    }
+
+    res.status(200).json({ url } satisfies MediaSignedUrlResponse)
+  }
+)
+
+/**
+ * DELETE /api/albums/:albumId/media/:mediaId – remove doc and Storage objects. Requires album token.
+ */
+router.delete(
+  '/:albumId/media/:mediaId',
+  requireAlbumToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { albumId, mediaId } = req.params
+    if (!albumId || !mediaId) {
+      res.status(400).json({ error: 'Invalid request' })
+      return
+    }
+
+    const db = getFirestore()
+    if (!db) {
+      res.status(503).json({ error: 'Database unavailable' })
+      return
+    }
+
+    const album = await readDoc('albums', albumId)
+    if (!album) {
+      res.status(404).json({ error: 'Album not found' })
+      return
+    }
+
+    const media = await readMediaDoc(albumId, mediaId)
+    if (!media) {
+      res.status(404).json({ error: 'Media not found' })
+      return
+    }
+
+    const paths: string[] = []
+    if (media.storagePath && isPathUnderAlbum(albumId, media.storagePath)) paths.push(media.storagePath)
+    if (media.previewPath && isPathUnderAlbum(albumId, media.previewPath)) paths.push(media.previewPath)
+    if (media.thumbnailPath && isPathUnderAlbum(albumId, media.thumbnailPath))
+      paths.push(media.thumbnailPath)
+
+    try {
+      for (const p of paths) {
+        await deleteFile(p).catch(() => { })
+      }
+      await deleteMediaDoc(albumId, mediaId)
+      res.status(204).send()
+    } catch (err) {
+      console.error('[DELETE /api/albums/.../media/...] failed:', err instanceof Error ? err.message : err)
+      res.status(500).json({ error: 'Delete media failed' })
+    }
   }
 )
 

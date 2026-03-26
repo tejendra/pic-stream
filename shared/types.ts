@@ -133,3 +133,10 @@ export type MediaListItem = Pick<
 export interface ListMediaResponse {
   media: MediaListItem[]
 }
+
+export type MediaUrlType = 'original' | 'preview' | 'thumbnail'
+
+/** GET /api/albums/:albumId/media/:mediaId/url?type=… */
+export interface MediaSignedUrlResponse {
+  url: string
+}
