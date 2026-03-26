@@ -302,52 +302,52 @@ Validate all uploads: type, size, count, duplicate, and path safety. No executio
 
 ---
 
-## Feature 7: Upload flow – prepare, upload, finalize (Must have)
+## Feature 7: Upload flow – prepare, upload, finalize (Must have) [DONE]
 
 Backend issues signed upload URLs; client uploads to Storage; backend creates media docs and enqueues video jobs.
 
 ### User Stories
 
-#### 7.1 Prepare upload API
+#### 7.1 Prepare upload API [DONE]
 
 **Description**: Backend: POST `/api/albums/:albumId/upload/prepare` (auth: album token). Body: `{ files: [{ filename, size, mimeType }] }`. Validate MIME allowlist, size ≤500MB per file, count ≤25. For each file check duplicate by (filename + size) in album media; build list of duplicates. For each non-duplicate generate unique storage path and signed resumable upload URL (expiry 15 min). Return 200 with `{ uploads: [{ uploadId, signedUploadUrl, storagePath }], duplicates: [{ filename, size }] }`.
 
 **Acceptance Criteria**:
 
-- [ ] Valid request returns 200 with uploads and duplicates arrays
-- [ ] Duplicates are not in uploads array
-- [ ] URLs expire in 15 minutes
+- [x] Valid request returns 200 with uploads and duplicates arrays
+- [x] Duplicates are not in uploads array
+- [x] URLs expire in 15 minutes
 
-#### 7.2 Finalize upload API
+#### 7.2 Finalize upload API [DONE]
 
 **Description**: Backend: POST `/api/albums/:albumId/upload/finalize` (auth: album token). Body: `{ uploads: [{ uploadId, storagePath, uploaderName, displayName? }] }`. For each item: read first 512 bytes from Storage at storagePath, run magic-byte check; if fail return 400. Create media doc in `albums/{albumId}/media` with storagePath, uploaderName, displayName, size, mimeType, duplicateKey; set thumbnailPath and previewPath to null for all (v1: no client thumbnail upload). For video mimeType create a doc in Firestore collection `jobs` with albumId, mediaId, status "pending", createdAt, updatedAt. Return 200 with `{ mediaIds: string[] }`.
 
 **Acceptance Criteria**:
 
-- [ ] Each upload becomes a media doc with thumbnailPath and previewPath null
-- [ ] Video creates a job doc with status pending
-- [ ] Magic-byte failure returns 400
-- [ ] Response lists created media IDs
+- [x] Each upload becomes a media doc with thumbnailPath and previewPath null
+- [x] Video creates a job doc with status pending
+- [x] Magic-byte failure returns 400
+- [x] Response lists created media IDs
 
-#### 7.3 Upload UI (frontend)
+#### 7.3 Upload UI (frontend) [DONE]
 
 **Description**: Frontend: Upload UI: file input (multiple, accept images and video), max 25 files. Call prepare with `{ files: [{ filename, size, mimeType }] }`. For each item in response.uploads upload the file to signedUploadUrl using fetch (PUT, body = file blob). Show per-file progress using XMLHttpRequest. When all uploads complete call finalize with `{ uploads: [{ uploadId, storagePath, uploaderName, displayName }] }` (no thumbnail in v1). If response.duplicates length > 0 show "Already in album" for those filenames and do not upload them.
 
 **Acceptance Criteria**:
 
-- [ ] User selects up to 25 files
-- [ ] Progress is shown per file
-- [ ] prepare → upload to URL → finalize runs successfully
-- [ ] Duplicate filenames are not uploaded and user sees "Already in album"
+- [x] User selects up to 25 files
+- [x] Progress is shown per file
+- [x] prepare → upload to URL → finalize runs successfully
+- [x] Duplicate filenames are not uploaded and user sees "Already in album"
 
-#### 7.4 Handle duplicate response in frontend
+#### 7.4 Handle duplicate response in frontend [DONE]
 
 **Description**: Frontend: When prepare returns duplicates, display the list of duplicate filenames and do not include them in the upload or finalize payload. Finalize is called with only the non-duplicate uploads.
 
 **Acceptance Criteria**:
 
-- [ ] Duplicate files are omitted from upload and from finalize body
-- [ ] UI shows which files were skipped
+- [x] Duplicate files are omitted from upload and from finalize body
+- [x] UI shows which files were skipped
 
 ---
 
@@ -357,14 +357,14 @@ List media in an album; view thumbnails and full/preview content; download origi
 
 ### User Stories
 
-#### 8.1 List media API
+#### [DONE] 8.1 List media API
 
 **Description**: Backend: GET `/api/albums/:albumId/media` (auth: album token). Query subcollection `albums/{albumId}/media` orderBy createdAt ascending. Return 200 with `{ media: [{ id, thumbnailPath, previewPath, storagePath, displayName, uploaderName, size, mimeType, createdAt }] }`. Include items where previewPath is null.
 
 **Acceptance Criteria**:
 
-- [ ] Response is an array of media with those fields in createdAt order
-- [ ] Items with null previewPath are included
+- [x] Response is an array of media with those fields in createdAt order
+- [x] Items with null previewPath are included
 
 #### 8.2 Get signed URL API
 

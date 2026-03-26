@@ -18,7 +18,7 @@ export interface Media {
   albumId: string
   storagePath: string
   previewPath: string | null
-  thumbnailPath: string
+  thumbnailPath: string | null
   displayName: string
   uploaderName: string
   size: number
@@ -86,11 +86,17 @@ export interface PrepareUploadItem {
   uploadId: string
   signedUploadUrl: string
   storagePath: string
+  mimeType: string
+}
+
+export interface PrepareUploadDuplicate {
+  filename: string
+  size: number
 }
 
 export interface PrepareUploadResponse {
   uploads: PrepareUploadItem[]
-  duplicates: string[]
+  duplicates: PrepareUploadDuplicate[]
 }
 
 /** POST /api/albums/:albumId/upload/finalize */
@@ -122,3 +128,8 @@ export type MediaListItem = Pick<
   | 'mimeType'
   | 'createdAt'
 >
+
+/** GET /api/albums/:albumId/media */
+export interface ListMediaResponse {
+  media: MediaListItem[]
+}
