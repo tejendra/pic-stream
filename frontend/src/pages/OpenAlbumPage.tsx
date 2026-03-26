@@ -46,7 +46,7 @@ export default function OpenAlbumPage() {
       const { token, albumId } = await openAlbum(seed)
       const key = `album_${albumId}`
       localStorage.setItem(key, JSON.stringify({ token, albumId }))
-      const album = await getAlbum(albumId, token)
+      const album = await getAlbum(albumId)
       addToRecentAlbums(albumId, album.name)
       navigate(`/album/${albumId}`)
     } catch (err) {
