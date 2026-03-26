@@ -1,9 +1,13 @@
 import type {
   CreateAlbumRequest,
   CreateAlbumResponse,
+  FinalizeUploadRequest,
+  FinalizeUploadResponse,
   GetAlbumResponse,
   MediaListItem,
   OpenAlbumResponse,
+  PrepareUploadFile,
+  PrepareUploadResponse,
 } from 'shared'
 
 export type { CreateAlbumResponse, GetAlbumResponse, MediaListItem }
@@ -125,4 +129,80 @@ export async function openAlbum(seed: string): Promise<{
   const albumId = decodeAlbumIdFromToken(data.token)
   if (!albumId) throw new Error('Invalid token response')
   return { token: data.token, albumId }
+}
+
+/** POST /api/albums/:albumId/upload/prepare – get signed URLs and duplicate list. */
+export async function prepareUpload(
+  albumId: string,
+  token: string,
+  files: PrepareUploadFile[]
+): Promise<PrepareUploadResponse> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}/upload/prepare`), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ files }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Prepare upload failed')
+  }
+  return res.json() as Promise<PrepareUploadResponse>
+}
+
+/** POST /api/albums/:albumId/upload/finalize – create media docs after client uploads. */
+export async function finalizeUpload(
+  albumId: string,
+  token: string,
+  body: FinalizeUploadRequest
+): Promise<FinalizeUploadResponse> {
+  const res = await fetch(apiUrl(`/api/albums/${albumId}/upload/finalize`), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? 'Finalize upload failed')
+  }
+  return res.json() as Promise<FinalizeUploadResponse>
+}
+
+/**
+ * Upload a file to a signed URL via PUT. Reports progress via onProgress(loaded, total).
+ */
+export function uploadFileToSignedUrl(
+  signedUrl: string,
+  file: File,
+  mimeType: string,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const total = file.size
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(e.loaded, e.total)
+      } else if (onProgress && total > 0) {
+        onProgress(e.loaded, total)
+      }
+    })
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error(`Upload failed: ${xhr.status}`))
+    })
+    xhr.addEventListener('error', () => reject(new Error('Upload failed')))
+    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')))
+
+    xhr.open('PUT', signedUrl, true)
+    // GCS signed URLs from prepare only sign `host`; use a single Content-Type so preflight stays predictable.
+    xhr.setRequestHeader('Content-Type', mimeType)
+    xhr.send(file)
+  })
 }

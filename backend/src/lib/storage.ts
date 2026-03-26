@@ -12,6 +12,7 @@ export function getBucket(): ReturnType<admin.storage.Storage['bucket']> | null 
 
 export async function getSignedUploadUrl(
   path: string,
+  mimeType: string,
   expiresInMs: number = DEFAULT_EXPIRY_MS
 ): Promise<string | null> {
   const bucket = getBucket()
@@ -20,6 +21,7 @@ export async function getSignedUploadUrl(
     version: 'v4',
     action: 'write',
     expires: Date.now() + expiresInMs,
+    contentType: mimeType,
   })
   return url
 }

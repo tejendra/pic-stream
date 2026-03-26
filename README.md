@@ -41,10 +41,27 @@ Backend reads config from `backend/.env`. For the full list with placeholders, s
 | `JWT_SECRET` | — | Secret for signing album tokens (min 32 chars). Required for auth. |
 | `CRON_SECRET` | — | Secret for securing `/api/cron/delete-expired` (Authorization: Bearer). |
 | `GOOGLE_CLOUD_PROJECT` | `pic-stream-34ace` | Firebase / Google Cloud project ID. Override for another project. |
-| `FIREBASE_STORAGE_BUCKET` | `pic-stream-34ace.appspot.com` | Firebase Storage bucket. Override for another project. |
+| `FIREBASE_STORAGE_BUCKET` | `pic-stream-34ace.firebasestorage.app` | Firebase Storage bucket. Override for another project. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | — | Path to service account JSON (local dev). Omit on Cloud Run. |
 
 **Frontend** (optional): set `VITE_API_URL` for API base URL (e.g. `http://localhost:3001`). Empty = same origin (use dev proxy).
+
+## Deploy backend to Cloud Run
+
+The backend image is built from the **repo root** (so the Dockerfile can include the `shared` package). Use **Cloud Build** (recommended; runs on amd64), then deploy. From repo root (replace `YOUR_PROJECT_ID`):
+
+```bash
+gcloud services enable cloudbuild.googleapis.com
+gcloud builds submit . --config=cloudbuild.yaml
+gcloud run deploy pic-stream-api \
+  --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api \
+  --region us-east1 \
+  --platform managed \
+  --set-env-vars "JWT_SECRET=your-secret-min-32-chars,CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.firebasestorage.app" \
+  --allow-unauthenticated
+```
+
+Full setup (Artifact Registry repo, env vars, IAM) is in [docs/cloud-run.md](docs/cloud-run.md).
 
 ## Deploy to Firebase
 
@@ -54,7 +71,8 @@ Deploys the frontend (Hosting), Firestore rules, and Storage rules.
 
    ```bash
    cd shared && npm run build && cd ..
-   cd frontend && npm run build
+   cd frontend
+   VITE_API_URL=https://YOUR_CLOUD_RUN_URL npm run build
    ```
 
 2. **Deploy** (from repo root):
@@ -74,41 +92,6 @@ Deploys the frontend (Hosting), Firestore rules, and Storage rules.
    ```
 
    Ensure you're logged in (`firebase login`) and the project is set (see `.firebaserc`). For more on how Firebase is used, see [docs/firebase.md](docs/firebase.md).
-
-## Deploy backend to Cloud Run
-
-The backend image is built from the **repo root** (so the Dockerfile can include the `shared` package). Use **Cloud Build** (recommended; runs on amd64), then deploy. From repo root (replace `YOUR_PROJECT_ID`):
-
-```bash
-gcloud services enable cloudbuild.googleapis.com
-gcloud builds submit -f backend/Dockerfile --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api .
-gcloud run deploy pic-stream-api \
-  --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api \
-  --region us-east1 \
-  --platform managed \
-  --set-env-vars "CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.appspot.com" \
-  --allow-unauthenticated
-```
-
-Full setup (Artifact Registry repo, env vars, IAM) is in [docs/cloud-run.md](docs/cloud-run.md).
-
-## Deploy order for production
-
-Deploy in this order so the frontend points at the live API:
-
-1. **Deploy the backend** (Cloud Run) using the steps above. Note the service URL (e.g. `https://pic-stream-api-xxxxx-ue.a.run.app`).
-
-2. **Build the frontend** with that URL so the app calls your API in production:
-   ```bash
-   cd frontend
-   VITE_API_URL=https://YOUR_CLOUD_RUN_URL npm run build
-   ```
-
-3. **Deploy the frontend** (Firebase Hosting):
-   ```bash
-   firebase deploy --only hosting
-   ```
-   Or run `firebase deploy` from the repo root to update hosting plus Firestore/Storage rules.
 
 ## Project structure
 
@@ -131,3 +114,10 @@ Deploy in this order so the frontend points at the live API:
   - v1: Up to 25 files per batch (images + videos).
   - Large files: chunked/resumable or similar so large videos don’t fail or block the UI.
   - Duplicate detection: detect when the user is uploading a file that already exists in the album (e.g. by hash or name+size) and warn or prevent duplicate.
+
+## Google Commands
+
+- Check CORS config on storage
+  - `gcloud storage buckets describe gs://pic-stream-34ace.firebasestorage.app --format="default(cors_config)"`
+- Update/Apply CORS config on storage
+  - `gcloud storage buckets update gs://pic-stream-34ace.firebasestorage.app --cors-file=storage-cors.json`

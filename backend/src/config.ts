@@ -11,7 +11,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET ?? '',
   firebase: {
     projectId: process.env.GOOGLE_CLOUD_PROJECT ?? DEFAULT_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? `${DEFAULT_PROJECT_ID}.appspot.com`,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? `${DEFAULT_PROJECT_ID}.firebasestorage.app`,
   },
 }
 

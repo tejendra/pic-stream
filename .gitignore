@@ -7,3 +7,5 @@ backend/.env
 .firebase/
 
 .DS_Store
+
+scripts/deploy.env

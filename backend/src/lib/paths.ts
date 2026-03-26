@@ -13,15 +13,17 @@ function isSegmentSafe(segment: string): boolean {
 }
 
 /**
- * Sanitizes a filename for use in a storage path: basename only, allowed chars [a-zA-Z0-9._-].
- * Returns null if invalid (contains '..', empty after basename, or disallowed chars).
+ * Sanitizes a filename for use in a storage path: basename only.
+ * Replaces spaces and other disallowed chars with underscore so paths stay safe; only [a-zA-Z0-9._-] allowed.
+ * Returns null if invalid (contains '..', or empty after basename/sanitization).
  */
 export function sanitizeFilename(filename: string): string | null {
   if (filename.includes('..')) return null
   const basename = filename.replace(/^.*[/\\]/, '')
   if (basename === '' || basename === '..') return null
-  if (!SAFE_SEGMENT_REGEX.test(basename)) return null
-  return basename
+  const sanitized = basename.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || null
+  if (sanitized === null || sanitized === '' || sanitized === '..') return null
+  return sanitized
 }
 
 export type StoragePathType = 'originals' | 'previews' | 'thumbnails'
