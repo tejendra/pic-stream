@@ -26,6 +26,33 @@ export function apiUrl(path: string): string {
   return `${base}${p}`
 }
 
+const ALBUM_STORAGE_PREFIX = 'album_'
+
+export function albumTokenStorageKey(albumId: string): string {
+  return `${ALBUM_STORAGE_PREFIX}${albumId}`
+}
+
+/** Read JWT from localStorage `album_${albumId}` (JSON `{ token, albumId }`). */
+export function getStoredAlbumToken(albumId: string): string | null {
+  try {
+    const raw = localStorage.getItem(albumTokenStorageKey(albumId))
+    if (!raw) return null
+    const stored = JSON.parse(raw) as { token?: string }
+    return typeof stored?.token === 'string' ? stored.token : null
+  } catch {
+    return null
+  }
+}
+
+async function albumApiFetch(albumId: string, path: string, init: RequestInit = {}): Promise<Response> {
+  const token = getStoredAlbumToken(albumId)
+  const headers = new Headers(init.headers)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  return fetch(apiUrl(path), { ...init, headers })
+}
+
 export async function createAlbum(
   request: CreateAlbumRequest
 ): Promise<CreateAlbumResponse> {
@@ -67,13 +94,8 @@ export function isTokenExpired(token: string | null | undefined): boolean {
   return payload.exp < Math.floor(Date.now() / 1000) + 60
 }
 
-export async function getAlbum(
-  albumId: string,
-  token: string
-): Promise<GetAlbumResponse> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export async function getAlbum(albumId: string): Promise<GetAlbumResponse> {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error((err as { error?: string }).error ?? 'Failed to load album')
@@ -83,15 +105,11 @@ export async function getAlbum(
 
 export async function patchAlbum(
   albumId: string,
-  token: string,
   body: { deleteOn?: string; name?: string }
 ): Promise<GetAlbumResponse> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -101,10 +119,9 @@ export async function patchAlbum(
   return res.json() as Promise<GetAlbumResponse>
 }
 
-export async function deleteAlbum(albumId: string, token: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}`), {
+export async function deleteAlbum(albumId: string): Promise<void> {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok && res.status !== 204) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -137,15 +154,11 @@ export async function openAlbum(seed: string): Promise<{
 /** POST /api/albums/:albumId/upload/prepare – get signed URLs and duplicate list. */
 export async function prepareUpload(
   albumId: string,
-  token: string,
   files: PrepareUploadFile[]
 ): Promise<PrepareUploadResponse> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}/upload/prepare`), {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}/upload/prepare`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ files }),
   })
   if (!res.ok) {
@@ -156,13 +169,8 @@ export async function prepareUpload(
 }
 
 /** GET /api/albums/:albumId/media – list media. */
-export async function listMedia(
-  albumId: string,
-  token: string
-): Promise<ListMediaResponse> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}/media`), {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export async function listMedia(albumId: string): Promise<ListMediaResponse> {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}/media`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error((err as { error?: string }).error ?? 'Failed to list media')
@@ -173,16 +181,13 @@ export async function listMedia(
 /** GET /api/albums/:albumId/media/:mediaId/url – signed download URL. */
 export async function getMediaSignedUrl(
   albumId: string,
-  token: string,
   mediaId: string,
   type: MediaUrlType
 ): Promise<MediaSignedUrlResponse> {
   const params = new URLSearchParams({ type })
-  const res = await fetch(
-    apiUrl(`/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}/url?${params}`),
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
+  const res = await albumApiFetch(
+    albumId,
+    `/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}/url?${params}`
   )
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -192,15 +197,12 @@ export async function getMediaSignedUrl(
 }
 
 /** DELETE /api/albums/:albumId/media/:mediaId */
-export async function deleteMedia(
-  albumId: string,
-  token: string,
-  mediaId: string
-): Promise<void> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}`), {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export async function deleteMedia(albumId: string, mediaId: string): Promise<void> {
+  const res = await albumApiFetch(
+    albumId,
+    `/api/albums/${albumId}/media/${encodeURIComponent(mediaId)}`,
+    { method: 'DELETE' }
+  )
   if (!res.ok && res.status !== 204) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error((err as { error?: string }).error ?? 'Delete media failed')
@@ -210,15 +212,11 @@ export async function deleteMedia(
 /** POST /api/albums/:albumId/upload/finalize – create media docs after client uploads. */
 export async function finalizeUpload(
   albumId: string,
-  token: string,
   body: FinalizeUploadRequest
 ): Promise<FinalizeUploadResponse> {
-  const res = await fetch(apiUrl(`/api/albums/${albumId}/upload/finalize`), {
+  const res = await albumApiFetch(albumId, `/api/albums/${albumId}/upload/finalize`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   if (!res.ok) {

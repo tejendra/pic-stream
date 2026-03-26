@@ -503,8 +503,8 @@ Landing page and navigation so users can create or open an album and reach the a
 
 **Acceptance Criteria**:
 
-- [ ] Landing has both buttons and recent list
-- [ ] Clicking recent navigates to album when token is valid
+- [x] Landing has both buttons and recent list
+- [x] Clicking recent navigates to album when token is valid
 
 #### 11.2 Routes and API client
 
@@ -512,8 +512,8 @@ Landing page and navigation so users can create or open an album and reach the a
 
 **Acceptance Criteria**:
 
-- [ ] All three routes work
-- [ ] Requests from album page include the correct Bearer token
+- [x] All three routes work
+- [x] Requests from album page include the correct Bearer token
 
 #### 11.3 Expired token handling
 
@@ -521,8 +521,8 @@ Landing page and navigation so users can create or open an album and reach the a
 
 **Acceptance Criteria**:
 
-- [ ] Expired or missing token redirects to landing with message
-- [ ] User can use "Open album" to re-enter seed
+- [x] Expired or missing token redirects to landing with message
+- [x] User can use "Open album" to re-enter seed
 
 ---
 

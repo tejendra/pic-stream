@@ -1,3 +1,6 @@
+/** Session flash after redirect from album (missing/expired token). */
+export const LANDING_FLASH_SESSION_KEY = 'picStreamLandingFlash'
+
 const STORAGE_KEY = 'recentAlbums'
 const MAX_RECENT = 20
 

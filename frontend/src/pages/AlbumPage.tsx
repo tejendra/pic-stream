@@ -18,18 +18,20 @@ import type { GetAlbumResponse, MediaListItem, MediaUrlType, PrepareUploadItem }
 /** Duplicate file info from prepare response (filename + size). */
 type PrepareDuplicate = { filename: string; size: number }
 import {
+  albumTokenStorageKey,
   deleteAlbum,
   deleteMedia,
   finalizeUpload,
   getAlbum,
   getMediaSignedUrl,
+  getStoredAlbumToken,
   listMedia,
   patchAlbum,
   prepareUpload,
   uploadFileToSignedUrl,
   isTokenExpired,
 } from '../api/client'
-import { removeFromRecentAlbums } from '../lib/recentAlbums'
+import { LANDING_FLASH_SESSION_KEY, removeFromRecentAlbums } from '../lib/recentAlbums'
 
 function isVideoMime(mimeType: string): boolean {
   return mimeType.startsWith('video/')
@@ -48,10 +50,11 @@ function gridUrlType(m: MediaListItem): MediaUrlType | 'processing' {
 const MAX_UPLOAD_FILES = 25
 const ACCEPT_UPLOAD = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,video/mp4,video/webm'
 
-const ALBUM_STORAGE_PREFIX = 'album_'
+const SESSION_EXPIRED_LANDING_MESSAGE =
+  'Session expired. Re-enter seed to open this album.'
 
 export default function AlbumPage() {
-  const { id } = useParams<{ id: string }>()
+  const { albumId } = useParams<{ albumId: string }>()
   const navigate = useNavigate()
   const [album, setAlbum] = useState<GetAlbumResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,61 +79,30 @@ export default function AlbumPage() {
   const [removeItemTarget, setRemoveItemTarget] = useState<MediaListItem | null>(null)
   const [removeItemBusy, setRemoveItemBusy] = useState(false)
 
-  const getToken = useCallback((): string | null => {
-    if (!id) return null
-    const raw = localStorage.getItem(ALBUM_STORAGE_PREFIX + id)
-    if (!raw) return null
-    try {
-      const stored = JSON.parse(raw) as { token?: string }
-      return typeof stored?.token === 'string' ? stored.token : null
-    } catch {
-      return null
-    }
-  }, [id])
-
   const loadMedia = useCallback(async () => {
-    if (!id) return
-    const token = getToken()
+    if (!albumId) return
+    const token = getStoredAlbumToken(albumId)
     if (!token) return
     setMediaLoading(true)
     try {
-      const { media: items } = await listMedia(id, token)
+      const { media: items } = await listMedia(albumId)
       setMedia(items)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load media')
     } finally {
       setMediaLoading(false)
     }
-  }, [id, getToken])
+  }, [albumId])
 
   useEffect(() => {
-    if (!id) return
-    const raw = localStorage.getItem(ALBUM_STORAGE_PREFIX + id)
-    if (!raw) {
-      setError('Album token missing')
-      setLoading(false)
+    if (!albumId) return
+    const token = getStoredAlbumToken(albumId)
+    if (!token || isTokenExpired(token)) {
+      sessionStorage.setItem(LANDING_FLASH_SESSION_KEY, SESSION_EXPIRED_LANDING_MESSAGE)
+      navigate('/', { replace: true })
       return
     }
-    let token: string
-    try {
-      const stored = JSON.parse(raw) as { token?: string }
-      if (typeof stored?.token !== 'string') {
-        setError('Invalid stored token')
-        setLoading(false)
-        return
-      }
-      token = stored.token
-    } catch {
-      setError('Invalid stored token')
-      setLoading(false)
-      return
-    }
-    if (isTokenExpired(token)) {
-      setError('Token expired')
-      setLoading(false)
-      return
-    }
-    getAlbum(id, token)
+    getAlbum(albumId)
       .then((data) => {
         setAlbum(data)
         setEditDeleteOn(data.deleteOn || '')
@@ -139,19 +111,19 @@ export default function AlbumPage() {
         setError(err instanceof Error ? err.message : 'Failed to load album')
       })
       .finally(() => setLoading(false))
-  }, [id])
+  }, [albumId, navigate])
 
   useEffect(() => {
-    if (!id || !album) return
+    if (!albumId || !album) return
     loadMedia()
-  }, [id, album, loadMedia])
+  }, [albumId, album, loadMedia])
 
   useEffect(() => {
-    if (!id || !media.length) {
+    if (!albumId || !media.length) {
       setGridUrls({})
       return
     }
-    const token = getToken()
+    const token = getStoredAlbumToken(albumId)
     if (!token) return
     let cancelled = false
     ;(async () => {
@@ -160,7 +132,7 @@ export default function AlbumPage() {
         const kind = gridUrlType(m)
         if (kind === 'processing') continue
         try {
-          const { url } = await getMediaSignedUrl(id, token, m.id, kind)
+          const { url } = await getMediaSignedUrl(albumId, m.id, kind)
           next[m.id] = url
         } catch {
           // leave missing; cell shows placeholder
@@ -171,15 +143,15 @@ export default function AlbumPage() {
     return () => {
       cancelled = true
     }
-  }, [id, media, getToken])
+  }, [albumId, media])
 
   useEffect(() => {
-    if (!selectedMedia || !id) {
+    if (!selectedMedia || !albumId) {
       setModalSrc(null)
       setModalLoading(false)
       return
     }
-    const token = getToken()
+    const token = getStoredAlbumToken(albumId)
     if (!token) return
     let cancelled = false
     setModalLoading(true)
@@ -192,7 +164,7 @@ export default function AlbumPage() {
       : 'original'
     ;(async () => {
       try {
-        const { url } = await getMediaSignedUrl(id, token, m.id, kind)
+        const { url } = await getMediaSignedUrl(albumId, m.id, kind)
         if (!cancelled) setModalSrc(url)
       } catch {
         if (!cancelled) setModalSrc(null)
@@ -203,7 +175,7 @@ export default function AlbumPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedMedia, id, getToken])
+  }, [selectedMedia, albumId])
 
   const needsVideoPoll = useMemo(
     () => media.some((m) => isVideoMime(m.mimeType) && !m.previewPath),
@@ -211,30 +183,21 @@ export default function AlbumPage() {
   )
 
   useEffect(() => {
-    if (!id || !album) return
-    const token = getToken()
+    if (!albumId || !album) return
+    const token = getStoredAlbumToken(albumId)
     if (!token || !needsVideoPoll) return
     const t = setInterval(() => {
-      listMedia(id, token)
+      listMedia(albumId)
         .then((r) => setMedia(r.media))
         .catch(() => {})
     }, 10000)
     return () => clearInterval(t)
-  }, [id, album, needsVideoPoll, getToken])
+  }, [albumId, album, needsVideoPoll])
 
   const handleEditSave = () => {
-    if (!id || !album) return
-    const raw = localStorage.getItem(ALBUM_STORAGE_PREFIX + id)
-    if (!raw) return
-    let token: string
-    try {
-      const stored = JSON.parse(raw) as { token?: string }
-      token = (stored?.token as string) || ''
-    } catch {
-      return
-    }
+    if (!albumId || !album) return
     setSaving(true)
-    patchAlbum(id, token, { deleteOn: editDeleteOn })
+    patchAlbum(albumId, { deleteOn: editDeleteOn })
       .then((updated) => {
         setAlbum(updated)
         setEditOpen(false)
@@ -246,13 +209,14 @@ export default function AlbumPage() {
   }
 
   const handleDeleteConfirm = () => {
-    const token = getToken()
-    if (!id || !token) return
+    if (!albumId) return
+    const token = getStoredAlbumToken(albumId)
+    if (!token) return
     setSaving(true)
-    deleteAlbum(id, token)
+    deleteAlbum(albumId)
       .then(() => {
-        removeFromRecentAlbums(id)
-        localStorage.removeItem(ALBUM_STORAGE_PREFIX + id)
+        removeFromRecentAlbums(albumId)
+        localStorage.removeItem(albumTokenStorageKey(albumId))
         navigate('/', { replace: true })
       })
       .catch((err) => {
@@ -265,10 +229,11 @@ export default function AlbumPage() {
   }
 
   const handleDownloadOriginal = async (m: MediaListItem) => {
-    const token = getToken()
-    if (!id || !token) return
+    if (!albumId) return
+    const token = getStoredAlbumToken(albumId)
+    if (!token) return
     try {
-      const { url } = await getMediaSignedUrl(id, token, m.id, 'original')
+      const { url } = await getMediaSignedUrl(albumId, m.id, 'original')
       const res = await fetch(url)
       if (!res.ok) throw new Error('Download failed')
       const blob = await res.blob()
@@ -286,12 +251,12 @@ export default function AlbumPage() {
   }
 
   const confirmRemoveMedia = async () => {
-    if (!id || !removeItemTarget) return
-    const token = getToken()
+    if (!albumId || !removeItemTarget) return
+    const token = getStoredAlbumToken(albumId)
     if (!token) return
     setRemoveItemBusy(true)
     try {
-      await deleteMedia(id, token, removeItemTarget.id)
+      await deleteMedia(albumId, removeItemTarget.id)
       if (selectedMedia?.id === removeItemTarget.id) {
         setSelectedMedia(null)
         setModalSrc(null)
@@ -314,8 +279,9 @@ export default function AlbumPage() {
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const token = getToken()
-    if (!id || !token || !e.target.files?.length) return
+    if (!albumId || !e.target.files?.length) return
+    const token = getStoredAlbumToken(albumId)
+    if (!token) return
     const fileList = Array.from(e.target.files)
     if (fileList.length > MAX_UPLOAD_FILES) {
       setUploadError(`Maximum ${MAX_UPLOAD_FILES} files at once`)
@@ -332,7 +298,7 @@ export default function AlbumPage() {
         size: f.size,
         mimeType: f.type || 'application/octet-stream',
       }))
-      const { uploads, duplicates } = await prepareUpload(id, token, filesMeta)
+      const { uploads, duplicates } = await prepareUpload(albumId, filesMeta)
       setUploadDuplicates(duplicates)
       const isDuplicate = (name: string, size: number) =>
         duplicates.some((d) => d.filename === name && d.size === size)
@@ -351,7 +317,7 @@ export default function AlbumPage() {
         e.target.value = ''
         return
       }
-      await finalizeUpload(id, token, {
+      await finalizeUpload(albumId, {
         uploads: uploads.map((u, i) => ({
           uploadId: u.uploadId,
           storagePath: u.storagePath,
