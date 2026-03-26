@@ -18,6 +18,8 @@ RUN npm run build
 # Run stage (linux/amd64 for Cloud Run)
 FROM --platform=linux/amd64 node:20-alpine
 
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 
 ENV NODE_ENV=production
