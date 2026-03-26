@@ -12,6 +12,7 @@ import {
   getFirestore,
   listAlbums,
   listMedia,
+  listMediaByCreatedAt,
   readDoc,
   updateDoc,
   writeDoc,
@@ -32,11 +33,13 @@ import type {
   CreateAlbumResponse,
   OpenAlbumRequest,
   OpenAlbumResponse,
+  PrepareUploadDuplicate,
   PrepareUploadRequest,
   PrepareUploadResponse,
   PrepareUploadFile,
   FinalizeUploadRequest,
   FinalizeUploadResponse,
+  ListMediaResponse,
 } from 'shared'
 import { isPathUnderAlbum } from '../lib/paths.js'
 
@@ -251,12 +254,12 @@ router.post(
 
     const existingKeys = await getExistingDuplicateKeys(albumId)
     const uploads: PrepareUploadResponse['uploads'] = []
-    const duplicates: string[] = []
+    const duplicates: PrepareUploadDuplicate[] = []
 
     for (const file of files) {
       const duplicateKey = `${file.filename}|${file.size}`
       if (existingKeys.has(duplicateKey)) {
-        duplicates.push(file.filename)
+        duplicates.push({ filename: file.filename, size: file.size })
         continue
       }
 
@@ -266,8 +269,8 @@ router.post(
         res.status(400).json({ error: 'Invalid path' })
         return
       }
-
-      const signedUrl = await getSignedUploadUrl(storagePath)
+      console.log('mimeType used to get signed url', file.mimeType)
+      const signedUrl = await getSignedUploadUrl(storagePath, file.mimeType)
       if (!signedUrl) {
         res.status(503).json({ error: 'Storage unavailable' })
         return
@@ -279,6 +282,7 @@ router.post(
         uploadId,
         signedUploadUrl: signedUrl,
         storagePath,
+        mimeType: file.mimeType,
       })
     }
 
@@ -374,7 +378,7 @@ router.post(
         albumId,
         storagePath: item.storagePath,
         previewPath: null,
-        thumbnailPath: '',
+        thumbnailPath: null,
         displayName: item.displayName ?? item.storagePath.replace(/^.*\//, ''),
         uploaderName: item.uploaderName,
         size: session.size,
@@ -402,6 +406,37 @@ router.post(
     }
 
     res.status(200).json({ mediaIds } satisfies FinalizeUploadResponse)
+  }
+)
+
+/**
+ * GET /api/albums/:albumId/media – list media in createdAt order. Requires album token.
+ * Includes items where previewPath (or thumbnailPath) is null.
+ */
+router.get(
+  '/:albumId/media',
+  requireAlbumToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const albumId = req.params.albumId
+    if (!albumId) {
+      res.status(400).json({ error: 'Invalid album' })
+      return
+    }
+
+    const db = getFirestore()
+    if (!db) {
+      res.status(503).json({ error: 'Database unavailable' })
+      return
+    }
+
+    const album = await readDoc('albums', albumId)
+    if (!album) {
+      res.status(404).json({ error: 'Album not found' })
+      return
+    }
+
+    const media = await listMediaByCreatedAt(albumId)
+    res.status(200).json({ media } satisfies ListMediaResponse)
   }
 )
 
@@ -497,9 +532,9 @@ router.delete(
     try {
       const mediaList = await listMedia(albumId)
       for (const media of mediaList) {
-        if (media.storagePath) await deleteFile(media.storagePath).catch(() => {})
-        if (media.previewPath) await deleteFile(media.previewPath).catch(() => {})
-        if (media.thumbnailPath) await deleteFile(media.thumbnailPath).catch(() => {})
+        if (media.storagePath) await deleteFile(media.storagePath).catch(() => { })
+        if (media.previewPath) await deleteFile(media.previewPath).catch(() => { })
+        if (media.thumbnailPath) await deleteFile(media.thumbnailPath).catch(() => { })
         await deleteMediaDoc(albumId, media.id)
       }
       await deleteDoc('albums', albumId)
