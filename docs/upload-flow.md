@@ -2,6 +2,19 @@
 
 Media uploads use a three-step flow so the client uploads files **directly to Firebase Storage** (via signed URLs) instead of through the Express server. The server only validates, issues URLs, and records metadata.
 
+## CORS (required for uploads)
+
+The browser sends `PUT` requests to `storage.googleapis.com` (the signed URL host). The Storage bucket must have **CORS** configured or the browser will block the request with *"No 'Access-Control-Allow-Origin' header"* or *"blocked by CORS policy"*.
+
+Apply the repo’s CORS config **once per bucket** (e.g. after creating the project):
+
+```bash
+# From repo root so storage-cors.json is found
+gcloud storage buckets update gs://pic-stream-34ace.firebasestorage.app --cors-file=storage-cors.json
+```
+
+You need `roles/storage.admin` (or `storage.buckets.update`). For production you can restrict `origin` in `storage-cors.json` to your frontend origins instead of `["*"]`.
+
 ## Overview
 
 ```
@@ -58,6 +71,7 @@ If the client never calls finalize (e.g. closed the tab), we end up with an orph
 **Auth:** `Authorization: Bearer <album token>`
 
 **Request body:** `{ files: [{ filename, size, mimeType }] }`  
+
 - Up to **25 files** per request.  
 - Each file: max **500 MB**; MIME must be in the allowlist (JPEG, PNG, WebP, GIF, HEIC, HEIF, MP4, WebM).
 
@@ -69,7 +83,7 @@ If the client never calls finalize (e.g. closed the tab), we end up with an orph
    - Builds a storage path under `albums/{albumId}/originals/{uniqueId}_{sanitizedFilename}` (see [storage-paths.md](storage-paths.md)).
    - Gets a **signed upload URL** from Firebase Storage (15 min expiry).
    - Stores a **session entry** in memory: `uploadId → { mimeType, storagePath, size, duplicateKey }` (15 min TTL) for finalize to use.
-4. Returns `{ uploads: [{ uploadId, signedUploadUrl, storagePath }], duplicates: [filename, ...] }`.
+4. Returns `{ uploads: [{ uploadId, signedUploadUrl, storagePath }], duplicates: [{ filename, size }] }`.
 
 **Rate limit:** 30 prepare+finalize requests per 15 minutes per album token (shared with finalize). So effectively up to 15 batches of 25 files (375 files) per 15 minutes.
 

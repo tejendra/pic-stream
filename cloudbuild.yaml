@@ -1,0 +1,13 @@
+# Build backend image from repo root (Dockerfile needs shared/ and backend/).
+# Run from repo root: gcloud builds submit . --config=cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'backend/Dockerfile'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/${PROJECT_ID}/pic-stream/pic-stream-api'
+      - '.'
+images:
+  - 'us-east1-docker.pkg.dev/${PROJECT_ID}/pic-stream/pic-stream-api'

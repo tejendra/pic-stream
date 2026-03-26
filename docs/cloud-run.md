@@ -45,13 +45,13 @@ From the **repo root**. Enable the Cloud Build API if you haven’t:
 gcloud services enable cloudbuild.googleapis.com
 ```
 
-Then build and push in one command (replace `YOUR_PROJECT_ID`). The image is built from repo root so the Dockerfile can include the `shared` package:
+Then build and push from the **repo root** (the config uses `backend/Dockerfile` and context `.` so the `shared` package is included):
 
 ```bash
-gcloud builds submit -f backend/Dockerfile --tag us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api .
+gcloud builds submit . --config=cloudbuild.yaml
 ```
 
-Cloud Build runs the build on amd64, pushes the image to Artifact Registry, and you skip step 3.
+Cloud Build runs the build on amd64, pushes the image to Artifact Registry (tag `us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api`), and you skip step 3.
 
 **Option B: Build locally (Intel/AMD or if you’ve verified amd64)**
 
@@ -107,9 +107,10 @@ Cloud Run needs the same env vars as local, except credentials (handled by the d
 | Variable | Example / note |
 |----------|----------------|
 | `PORT` | Set automatically by Cloud Run (e.g. 8080). Do not override unless needed. |
+| `JWT_SECRET` | **Required.** Secret for signing/verifying album tokens (min 32 chars). Same value as local dev so tokens work. |
 | `CORS_ORIGIN` | Your frontend origin, e.g. `https://YOUR_PROJECT_ID.web.app` (Firebase Hosting). |
 | `GOOGLE_CLOUD_PROJECT` | Your Firebase/Google Cloud project ID. |
-| `FIREBASE_STORAGE_BUCKET` | Your Storage bucket, e.g. `YOUR_PROJECT_ID.appspot.com`. |
+| `FIREBASE_STORAGE_BUCKET` | Your Storage bucket, e.g. `YOUR_PROJECT_ID.firebasestorage.app`. |
 
 Set them at deploy time:
 
@@ -118,7 +119,7 @@ gcloud run deploy pic-stream-api \
   --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/pic-stream/pic-stream-api \
   --region us-east1 \
   --platform managed \
-  --set-env-vars "CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.appspot.com" \
+  --set-env-vars "JWT_SECRET=your-secret-min-32-chars,CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.firebasestorage.app" \
   --allow-unauthenticated
 ```
 
@@ -167,7 +168,7 @@ gcloud run deploy pic-stream-api \
   --source ./backend \
   --region us-east1 \
   --platform managed \
-  --set-env-vars "CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.appspot.com" \
+  --set-env-vars "JWT_SECRET=your-secret-min-32-chars,CORS_ORIGIN=https://YOUR_PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.firebasestorage.app" \
   --allow-unauthenticated
 ```
 
