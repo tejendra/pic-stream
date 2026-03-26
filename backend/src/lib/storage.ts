@@ -83,3 +83,24 @@ export async function deleteFile(path: string): Promise<void> {
     throw err
   }
 }
+
+/** Download full object to a local path (for worker transcoding). */
+export async function downloadFileToPath(storagePath: string, destination: string): Promise<void> {
+  const bucket = getBucket()
+  if (!bucket) throw new Error('Storage unavailable')
+  await bucket.file(storagePath).download({ destination })
+}
+
+/** Upload a local file to Storage with the given content type. */
+export async function uploadLocalFile(
+  localPath: string,
+  destination: string,
+  contentType: string
+): Promise<void> {
+  const bucket = getBucket()
+  if (!bucket) throw new Error('Storage unavailable')
+  await bucket.upload(localPath, {
+    destination,
+    metadata: { contentType },
+  })
+}
