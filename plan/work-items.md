@@ -351,7 +351,7 @@ Backend issues signed upload URLs; client uploads to Storage; backend creates me
 
 ---
 
-## Feature 8: Media listing, viewing, and download (Must have)
+## Feature 8: Media listing, viewing, and download (Must have) [DONE]
 
 List media in an album; view thumbnails and full/preview content; download original.
 
@@ -366,46 +366,46 @@ List media in an album; view thumbnails and full/preview content; download origi
 - [x] Response is an array of media with those fields in createdAt order
 - [x] Items with null previewPath are included
 
-#### 8.2 Get signed URL API
+#### [DONE] 8.2 Get signed URL API
 
 **Description**: Backend: GET `/api/albums/:albumId/media/:mediaId/url?type=original|preview|thumbnail` (auth: album token). Resolve path from media doc (storagePath, previewPath, or thumbnailPath by type). Generate signed download URL (expiry 1 hour). Return 200 with `{ url }`. Invalid type returns 400. Unknown mediaId returns 404.
 
 **Acceptance Criteria**:
 
-- [ ] Valid type returns 200 with url
-- [ ] Invalid type returns 400
-- [ ] Missing media returns 404
-- [ ] URL expires in 1 hour
+- [x] Valid type returns 200 with url
+- [x] Invalid type returns 400
+- [x] Missing media returns 404
+- [x] URL expires in 1 hour
 
-#### 8.3 Delete media API
+#### [DONE] 8.3 Delete media API
 
 **Description**: Backend: DELETE `/api/albums/:albumId/media/:mediaId` (auth: album token). Delete the media doc. Delete Storage objects at storagePath, previewPath (if set), thumbnailPath (if set). Return 204.
 
 **Acceptance Criteria**:
 
-- [ ] Media doc is deleted
-- [ ] All three Storage paths are deleted when present
-- [ ] Response is 204
+- [x] Media doc is deleted
+- [x] All three Storage paths are deleted when present
+- [x] Response is 204
 
-#### 8.4 Media grid and viewer (frontend)
+#### [DONE] 8.4 Media grid and viewer (frontend)
 
 **Description**: Frontend: Album page displays media in a grid. Each cell: for image mimeType use url type=original and display in a 200px box (object-fit: cover); for video use url type=thumbnail when thumbnailPath is set else show placeholder "Processing…". Show uploader name and display name. Click: open modal; image uses url type=original; video uses url type=preview (or type=original if previewPath null). "Download original" button: fetch url type=original, response.blob(), create object URL, create `<a download>`, trigger click. "Delete" button: confirm "Remove this item?", then DELETE, then refetch media list and update grid.
 
 **Acceptance Criteria**:
 
-- [ ] Grid shows image (original scaled) or video thumbnail/placeholder and names
-- [ ] Click opens modal with full image or video
-- [ ] Download triggers file download of the original
-- [ ] Delete shows confirmation and then removes item from grid
+- [x] Grid shows image (original scaled) or video thumbnail/placeholder and names
+- [x] Click opens modal with full image or video
+- [x] Download triggers file download of the original
+- [x] Delete shows confirmation and then removes item from grid
 
-#### 8.5 Video processing state (frontend)
+#### [DONE] 8.5 Video processing state (frontend)
 
 **Description**: Frontend: For media where mimeType is video and previewPath is null, show "Processing…" in the grid cell. Poll GET `/api/albums/:albumId/media` every 10 seconds; when the media item has previewPath set, show the thumbnail and enable play. Playback uses the URL with type=preview.
 
 **Acceptance Criteria**:
 
-- [ ] Videos without preview show "Processing…"
-- [ ] After previewPath is set (within 10s poll), thumbnail and play use preview URL
+- [x] Videos without preview show "Processing…"
+- [x] After previewPath is set (within 10s poll), thumbnail and play use preview URL
 
 ---
 
